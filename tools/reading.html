@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reading Queue · Command Center</title>
+  <link rel="stylesheet" href="../assets/css/tools.css" />
+  <script src="../assets/js/tools.js"></script>
+  <style>
+    .item { display: flex; gap: 12px; align-items: flex-start; padding: 13px 0; border-bottom: 1px solid var(--border); }
+    .item:last-child { border-bottom: none; }
+    .item .body { flex: 1; min-width: 0; }
+    .item h3 { margin: 0 0 3px; font-size: 1rem; }
+    .item h3 a { color: var(--text); }
+    .item .meta { font-size: .78rem; color: var(--text-faint); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .item.done h3 a { text-decoration: line-through; color: var(--text-faint); }
+    .filters { display: flex; gap: 6px; flex-wrap: wrap; }
+    .chip { cursor: pointer; }
+    .prio-hi { border-left: 3px solid var(--danger); padding-left: 9px; }
+    .prio-med { border-left: 3px solid var(--warn); padding-left: 9px; }
+    .prio-low { border-left: 3px solid var(--border-strong); padding-left: 9px; }
+  </style>
+</head>
+<body data-base="../">
+  <div class="wrap">
+    <div class="page-head">
+      <h1>Reading Queue</h1>
+      <p>Capture it now, read it later. Triage by priority; tag by topic.</p>
+    </div>
+
+    <div class="card">
+      <div class="grid cols-2">
+        <div><label class="fld">Title</label><input type="text" id="f-title" placeholder="Article or book title" /></div>
+        <div><label class="fld">Link (optional)</label><input type="url" id="f-url" placeholder="https://…" /></div>
+      </div>
+      <div class="grid cols-3" style="margin-top:12px">
+        <div><label class="fld">Priority</label>
+          <select id="f-prio"><option value="hi">High</option><option value="med" selected>Medium</option><option value="low">Low</option></select>
+        </div>
+        <div><label class="fld">Tags (comma-separated)</label><input type="text" id="f-tags" placeholder="china, trade, memo" /></div>
+        <div style="display:flex;align-items:flex-end"><button class="btn primary" style="width:100%" onclick="addItem()">Add to queue</button></div>
+      </div>
+    </div>
+
+    <div class="row between" style="margin:22px 0 10px">
+      <div class="filters" id="tag-filters"></div>
+      <div class="filters">
+        <span class="pill chip" data-f="all" onclick="setFilter('all')">All</span>
+        <span class="pill chip" data-f="unread" onclick="setFilter('unread')">Unread</span>
+        <span class="pill chip" data-f="done" onclick="setFilter('done')">Read</span>
+      </div>
+    </div>
+
+    <div class="card"><div id="list"></div></div>
+
+    <div class="row between" style="margin-top:16px">
+      <span class="muted" id="count"></span>
+      <div class="row">
+        <button class="btn ghost sm" onclick="exportJSON()">Export</button>
+        <button class="btn danger sm" onclick="clearDone()">Clear read</button>
+      </div>
+    </div>
+    <p class="footer-note">Stored locally in your browser.</p>
+  </div>
+
+  <script>
+    CC.buildTopbar('reading');
+    var KEY = 'cc.reading';
+    var state = { filter: 'all', tag: null };
+    function all() { return CC.load(KEY, []); }
+    function setAll(x) { CC.save(KEY, x); }
+
+    function addItem() {
+      var title = document.getElementById('f-title').value.trim();
+      if (!title) { document.getElementById('f-title').focus(); return; }
+      var url = document.getElementById('f-url').value.trim();
+      if (url && !/^https?:\/\//.test(url)) url = 'https://' + url;
+      var tags = document.getElementById('f-tags').value.split(',').map(function (t) { return t.trim().toLowerCase(); }).filter(Boolean);
+      var items = all();
+      items.unshift({ id: CC.uid(), title: title, url: url, prio: document.getElementById('f-prio').value,
+        tags: tags, done: false, added: new Date().toISOString().slice(0, 10) });
+      setAll(items);
+      ['f-title', 'f-url', 'f-tags'].forEach(function (i) { document.getElementById(i).value = ''; });
+      document.getElementById('f-title').focus();
+      render();
+    }
+
+    function toggle(id) { var x = all(); var it = x.find(function (i) { return i.id === id; }); if (it) it.done = !it.done; setAll(x); render(); }
+    function del(id) { setAll(all().filter(function (i) { return i.id !== id; })); render(); }
+    function setFilter(f) { state.filter = f; render(); }
+    function setTag(t) { state.tag = state.tag === t ? null : t; render(); }
+    function clearDone() { if (confirm('Remove all read items?')) { setAll(all().filter(function (i) { return !i.done; })); render(); } }
+    function exportJSON() {
+      var blob = new Blob([JSON.stringify(all(), null, 2)], { type: 'application/json' });
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = 'reading-queue.json'; a.click();
+    }
+
+    var PRIO = { hi: ['High', 'danger', 'prio-hi'], med: ['Med', 'warn', 'prio-med'], low: ['Low', '', 'prio-low'] };
+    var PRIO_ORDER = { hi: 0, med: 1, low: 2 };
+
+    function render() {
+      var items = all();
+      // tag filter chips
+      var tagSet = {};
+      items.forEach(function (i) { i.tags.forEach(function (t) { tagSet[t] = (tagSet[t] || 0) + 1; }); });
+      var tf = document.getElementById('tag-filters');
+      tf.innerHTML = Object.keys(tagSet).sort().map(function (t) {
+        return '<span class="pill chip ' + (state.tag === t ? 'accent' : '') + '" onclick="setTag(\'' + t + '\')">#' + CC.esc(t) + ' ' + tagSet[t] + '</span>';
+      }).join('') || '<span class="muted" style="font-size:.8rem">No tags yet</span>';
+
+      document.querySelectorAll('[data-f]').forEach(function (el) {
+        el.classList.toggle('accent', el.getAttribute('data-f') === state.filter);
+      });
+
+      var shown = items.filter(function (i) {
+        if (state.filter === 'unread' && i.done) return false;
+        if (state.filter === 'done' && !i.done) return false;
+        if (state.tag && i.tags.indexOf(state.tag) < 0) return false;
+        return true;
+      }).sort(function (a, b) {
+        if (a.done !== b.done) return a.done ? 1 : -1;
+        return PRIO_ORDER[a.prio] - PRIO_ORDER[b.prio];
+      });
+
+      var host = document.getElementById('list');
+      if (!shown.length) { host.innerHTML = '<div class="empty">Nothing here yet. Add something to read above.</div>'; }
+      else {
+        host.innerHTML = shown.map(function (i) {
+          var p = PRIO[i.prio] || PRIO.med;
+          var titleHtml = i.url
+            ? '<a href="' + CC.esc(i.url) + '" target="_blank" rel="noopener">' + CC.esc(i.title) + '</a>'
+            : CC.esc(i.title);
+          var tags = i.tags.map(function (t) { return '<span class="pill">#' + CC.esc(t) + '</span>'; }).join(' ');
+          return '<div class="item ' + (i.done ? 'done ' : '') + p[2] + '">' +
+            '<input type="checkbox" ' + (i.done ? 'checked' : '') + ' onchange="toggle(\'' + i.id + '\')" style="width:auto;margin-top:3px" />' +
+            '<div class="body"><h3>' + titleHtml + '</h3>' +
+            '<div class="meta"><span class="pill ' + p[1] + '">' + p[0] + '</span>' + tags +
+            '<span>added ' + i.added + '</span></div></div>' +
+            '<button class="btn ghost sm" onclick="del(\'' + i.id + '\')" title="Delete">×</button></div>';
+        }).join('');
+      }
+      var unread = items.filter(function (i) { return !i.done; }).length;
+      document.getElementById('count').textContent = items.length + ' items · ' + unread + ' unread';
+    }
+
+    document.getElementById('f-title').addEventListener('keydown', function (e) { if (e.key === 'Enter') addItem(); });
+    render();
+  </script>
+</body>
+</html>

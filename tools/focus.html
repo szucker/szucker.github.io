@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Deep-Work Timer · Command Center</title>
+  <link rel="stylesheet" href="../assets/css/tools.css" />
+  <script src="../assets/js/tools.js"></script>
+  <style>
+    .clock-wrap { display: grid; place-items: center; margin: 20px 0 8px; }
+    .dial { position: relative; width: 260px; height: 260px; }
+    .dial svg { transform: rotate(-90deg); }
+    .dial .time { position: absolute; inset: 0; display: grid; place-items: center; }
+    .dial .time .big { font-size: 3.2rem; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+    .dial .time .mode { font-size: .8rem; text-transform: uppercase; letter-spacing: .12em; color: var(--text-faint); }
+    .controls { display: flex; gap: 10px; justify-content: center; margin: 6px 0 18px; }
+    .presets { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    .stat { text-align: center; }
+    .stat .n { font-size: 1.8rem; font-weight: 700; }
+    .stat .l { font-size: .78rem; color: var(--text-faint); text-transform: uppercase; letter-spacing: .05em; }
+    .task-line { text-align: center; margin: 4px 0 14px; }
+  </style>
+</head>
+<body data-base="../">
+  <div class="wrap">
+    <div class="page-head" style="text-align:center">
+      <h1>Deep-Work Timer</h1>
+      <p>Protect a block. Write the memo, read the brief, no tab-switching.</p>
+    </div>
+
+    <div class="card" style="max-width:520px;margin:0 auto">
+      <div class="task-line">
+        <input type="text" id="task" placeholder="What are you focusing on?" style="text-align:center;border:none;background:transparent;font-size:1.05rem" />
+      </div>
+
+      <div class="clock-wrap">
+        <div class="dial">
+          <svg width="260" height="260" viewBox="0 0 260 260">
+            <circle cx="130" cy="130" r="118" fill="none" stroke="var(--bg-sunk)" stroke-width="14" />
+            <circle id="ring" cx="130" cy="130" r="118" fill="none" stroke="var(--accent)" stroke-width="14"
+              stroke-linecap="round" stroke-dasharray="741.4" stroke-dashoffset="0" />
+          </svg>
+          <div class="time"><div><div class="big" id="disp">25:00</div><div class="mode" id="mode">Focus</div></div></div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="btn primary" id="startBtn" onclick="toggle()">Start</button>
+        <button class="btn" onclick="reset()">Reset</button>
+        <button class="btn ghost" onclick="skip()">Skip</button>
+      </div>
+
+      <div class="presets">
+        <button class="btn sm" onclick="setPreset(25,5)">25 / 5</button>
+        <button class="btn sm" onclick="setPreset(50,10)">50 / 10</button>
+        <button class="btn sm" onclick="setPreset(90,15)">90 / 15</button>
+        <button class="btn sm" onclick="customPreset()">Custom…</button>
+      </div>
+    </div>
+
+    <div class="card" style="max-width:520px;margin:16px auto 0">
+      <div class="grid cols-3">
+        <div class="stat"><div class="n" id="s-today">0</div><div class="l">Sessions today</div></div>
+        <div class="stat"><div class="n" id="s-min">0</div><div class="l">Minutes focused</div></div>
+        <div class="stat"><div class="n" id="s-streak">0</div><div class="l">This block</div></div>
+      </div>
+    </div>
+    <p class="footer-note">Timer keeps running if you switch tabs. A chime plays when a block ends.</p>
+  </div>
+
+  <script>
+    CC.buildTopbar('focus');
+    var CIRC = 2 * Math.PI * 118;
+    document.getElementById('ring').setAttribute('stroke-dasharray', CIRC);
+
+    var cfg = CC.load('cc.focus.cfg', { focus: 25, brk: 5 });
+    var state = { mode: 'focus', total: cfg.focus * 60, left: cfg.focus * 60, running: false, sinceBreak: 0 };
+    var timer = null;
+
+    function stats() {
+      var s = CC.load('cc.focus.stats', {});
+      var today = new Date().toISOString().slice(0, 10);
+      if (s.date !== today) s = { date: today, sessions: 0, minutes: 0 };
+      return s;
+    }
+    function saveStats(s) { CC.save('cc.focus.stats', s); }
+
+    function fmt(sec) {
+      var m = Math.floor(sec / 60), s = sec % 60;
+      return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+    }
+    function draw() {
+      document.getElementById('disp').textContent = fmt(state.left);
+      document.getElementById('mode').textContent = state.mode === 'focus' ? 'Focus' : 'Break';
+      var frac = state.total ? state.left / state.total : 0;
+      document.getElementById('ring').setAttribute('stroke-dashoffset', CIRC * (1 - frac));
+      document.getElementById('ring').setAttribute('stroke', state.mode === 'focus' ? 'var(--accent)' : 'var(--good)');
+      document.title = fmt(state.left) + ' · ' + (state.mode === 'focus' ? 'Focus' : 'Break');
+      var s = stats();
+      document.getElementById('s-today').textContent = s.sessions;
+      document.getElementById('s-min').textContent = s.minutes;
+      document.getElementById('s-streak').textContent = state.sinceBreak;
+    }
+    function tick() {
+      if (state.left > 0) { state.left--; draw(); }
+      else { complete(); }
+    }
+    function toggle() {
+      state.running = !state.running;
+      document.getElementById('startBtn').textContent = state.running ? 'Pause' : 'Start';
+      if (state.running) { timer = setInterval(tick, 1000); }
+      else { clearInterval(timer); }
+    }
+    function reset() {
+      clearInterval(timer); state.running = false;
+      state.left = state.total; document.getElementById('startBtn').textContent = 'Start';
+      draw();
+    }
+    function complete() {
+      clearInterval(timer); state.running = false;
+      document.getElementById('startBtn').textContent = 'Start';
+      chime();
+      if (state.mode === 'focus') {
+        var s = stats(); s.sessions++; s.minutes += Math.round(state.total / 60); saveStats(s);
+        state.sinceBreak++;
+        switchMode('break');
+      } else { switchMode('focus'); }
+      draw();
+      notify(state.mode === 'focus' ? 'Break over — back to it.' : 'Block complete. Take a break.');
+    }
+    function switchMode(m) {
+      state.mode = m;
+      state.total = (m === 'focus' ? cfg.focus : cfg.brk) * 60;
+      state.left = state.total;
+    }
+    function skip() { state.left = 0; complete(); }
+
+    function setPreset(f, b) {
+      cfg = { focus: f, brk: b }; CC.save('cc.focus.cfg', cfg);
+      switchMode('focus'); reset();
+    }
+    function customPreset() {
+      var f = parseInt(prompt('Focus minutes:', cfg.focus), 10);
+      var b = parseInt(prompt('Break minutes:', cfg.brk), 10);
+      if (f > 0 && b >= 0) setPreset(f, b);
+    }
+
+    function chime() {
+      try {
+        var ctx = new (window.AudioContext || window.webkitAudioContext)();
+        [0, 0.18, 0.36].forEach(function (t, i) {
+          var o = ctx.createOscillator(), g = ctx.createGain();
+          o.frequency.value = [660, 880, 990][i]; o.connect(g); g.connect(ctx.destination);
+          g.gain.setValueAtTime(0.0001, ctx.currentTime + t);
+          g.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + t + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + t + 0.35);
+          o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + 0.4);
+        });
+      } catch (e) {}
+    }
+    function notify(msg) {
+      if (!('Notification' in window)) return;
+      if (Notification.permission === 'granted') new Notification('Deep-Work Timer', { body: msg });
+    }
+    if ('Notification' in window && Notification.permission === 'default') {
+      document.getElementById('startBtn').addEventListener('click', function once() {
+        Notification.requestPermission(); this.removeEventListener('click', once);
+      });
+    }
+    document.getElementById('task').value = CC.load('cc.focus.task', '');
+    document.getElementById('task').addEventListener('input', function () { CC.save('cc.focus.task', this.value); });
+
+    draw();
+  </script>
+</body>
+</html>

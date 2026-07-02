@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Time-Zone Planner · Command Center</title>
+  <link rel="stylesheet" href="../assets/css/tools.css" />
+  <script src="../assets/js/tools.js"></script>
+  <style>
+    .tzgrid { width: 100%; border-collapse: collapse; font-size: .8rem; }
+    .tzgrid th, .tzgrid td { text-align: center; padding: 0; }
+    .tzgrid .city { text-align: left; white-space: nowrap; padding: 6px 10px 6px 0; font-weight: 600; }
+    .tzgrid td.h { height: 34px; border: 1px solid var(--bg); position: relative; }
+    .tzgrid td.h span { font-size: .7rem; }
+    .h.work { background: var(--good-soft); color: var(--good); }
+    .h.fringe { background: var(--warn-soft); color: var(--warn); }
+    .h.sleep { background: var(--bg-sunk); color: var(--text-faint); }
+    .tzgrid .colhead { font-size: .68rem; color: var(--text-faint); padding-bottom: 6px; font-weight: 600; }
+    .tzgrid .colhead.best { color: var(--accent); }
+    .tzgrid td.h.best { outline: 2px solid var(--accent); outline-offset: -2px; z-index: 1; }
+    .legend { display: flex; gap: 14px; font-size: .78rem; color: var(--text-soft); margin-top: 12px; flex-wrap: wrap; }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .sw { width: 13px; height: 13px; border-radius: 3px; display: inline-block; }
+  </style>
+</head>
+<body data-base="../">
+  <div class="wrap">
+    <div class="page-head">
+      <h1>Time-Zone Planner</h1>
+      <p>Set your anchor time zone and date, then read down the columns to find a slot that lands in working hours everywhere.</p>
+    </div>
+
+    <div class="card">
+      <div class="grid cols-3">
+        <div><label class="fld">Anchor time zone</label><select id="anchor"></select></div>
+        <div><label class="fld">Date</label><input type="date" id="date" /></div>
+        <div><label class="fld">Working hours (local)</label>
+          <div class="row">
+            <input type="number" id="wstart" min="0" max="23" value="8" style="width:70px" />
+            <span class="muted">to</span>
+            <input type="number" id="wend" min="1" max="24" value="18" style="width:70px" />
+          </div>
+        </div>
+      </div>
+      <hr class="sep" />
+      <div class="row between">
+        <div class="row">
+          <input type="text" id="city-label" placeholder="Label" style="width:130px" />
+          <select id="city-tz" style="width:220px"></select>
+          <button class="btn primary sm" onclick="addCity()">Add city</button>
+        </div>
+        <button class="btn ghost sm" onclick="resetCities()">Reset to defaults</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;overflow-x:auto">
+      <div id="best-note" class="row" style="margin-bottom:10px"></div>
+      <table class="tzgrid"><tbody id="grid"></tbody></table>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--good-soft)"></i> Working hours</span>
+        <span><i class="sw" style="background:var(--warn-soft)"></i> Fringe (early/late)</span>
+        <span><i class="sw" style="background:var(--bg-sunk)"></i> Off / asleep</span>
+        <span><i class="sw" style="outline:2px solid var(--accent);outline-offset:-2px"></i> Best overlap</span>
+      </div>
+    </div>
+
+    <p class="footer-note">Offsets are computed for the selected date (DST-aware). Add any IANA zone below.</p>
+  </div>
+
+  <script>
+    CC.buildTopbar('tz');
+
+    var COMMON_ZONES = [
+      'America/Los_Angeles','America/Denver','America/Chicago','America/New_York','America/Sao_Paulo',
+      'Europe/London','Europe/Paris','Europe/Brussels','Europe/Berlin','Europe/Kyiv','Europe/Moscow',
+      'Africa/Cairo','Africa/Johannesburg','Asia/Jerusalem','Asia/Riyadh','Asia/Tehran','Asia/Dubai',
+      'Asia/Karachi','Asia/Kolkata','Asia/Dhaka','Asia/Bangkok','Asia/Shanghai','Asia/Singapore',
+      'Asia/Tokyo','Asia/Seoul','Australia/Sydney','Pacific/Auckland'
+    ];
+    var CITY_KEY = 'cc.tz.cities';
+    var DEFAULT_CITIES = [
+      { label: 'Washington', tz: 'America/New_York' },
+      { label: 'London', tz: 'Europe/London' },
+      { label: 'Brussels', tz: 'Europe/Brussels' },
+      { label: 'Tel Aviv', tz: 'Asia/Jerusalem' },
+      { label: 'New Delhi', tz: 'Asia/Kolkata' },
+      { label: 'Beijing', tz: 'Asia/Shanghai' }
+    ];
+    function getCities() { return CC.load(CITY_KEY, DEFAULT_CITIES); }
+    function setCities(c) { CC.save(CITY_KEY, c); }
+
+    var localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    // Populate selects
+    function fillZoneSelects() {
+      var opts = COMMON_ZONES.slice();
+      if (opts.indexOf(localTz) < 0) opts.unshift(localTz);
+      var html = opts.map(function (z) { return '<option value="' + z + '">' + z.replace(/_/g, ' ') + '</option>'; }).join('');
+      var a = document.getElementById('anchor'); a.innerHTML = html; a.value = localTz;
+      document.getElementById('city-tz').innerHTML = html;
+    }
+
+    // Minutes tz is ahead of UTC on given date
+    function offsetMin(tz, date) {
+      var utc = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+      var loc = new Date(date.toLocaleString('en-US', { timeZone: tz }));
+      return Math.round((loc - utc) / 60000);
+    }
+
+    function fmtHour(h) {
+      h = ((h % 24) + 24) % 24;
+      var ap = h < 12 ? 'a' : 'p';
+      var hh = h % 12; if (hh === 0) hh = 12;
+      return hh + ap;
+    }
+
+    function render() {
+      var anchorTz = document.getElementById('anchor').value;
+      var dstr = document.getElementById('date').value;
+      var date = dstr ? new Date(dstr + 'T12:00:00') : new Date();
+      var wStart = clampInt('wstart', 0, 23, 8);
+      var wEnd = clampInt('wend', 1, 24, 18);
+      var cities = getCities();
+
+      var anchorOff = offsetMin(anchorTz, date) / 60; // hours
+      var rows = cities.map(function (c) {
+        var off = offsetMin(c.tz, date) / 60;
+        return { label: c.label, tz: c.tz, delta: off - anchorOff }; // hours city is ahead of anchor
+      });
+
+      // score each anchor hour by how many cities fall in working hours
+      var scores = [];
+      for (var H = 0; H < 24; H++) {
+        var count = 0;
+        rows.forEach(function (r) {
+          var lh = ((Math.round(H + r.delta) % 24) + 24) % 24;
+          if (lh >= wStart && lh < wEnd) count++;
+        });
+        scores.push(count);
+      }
+      var best = Math.max.apply(null, scores);
+
+      // header row
+      var head = '<tr><th class="city"></th>';
+      for (var H = 0; H < 24; H++) {
+        head += '<th class="colhead' + (scores[H] === best && best > 0 ? ' best' : '') + '">' + fmtHour(H) + '</th>';
+      }
+      head += '</tr>';
+
+      var body = rows.map(function (r) {
+        var tr = '<tr><td class="city">' + CC.esc(r.label) +
+          ' <span class="muted" style="font-weight:400">' + gmtLabel(r.delta, anchorOff) + '</span></td>';
+        for (var H = 0; H < 24; H++) {
+          var lh = ((Math.round(H + r.delta) % 24) + 24) % 24;
+          var cls = lh >= wStart && lh < wEnd ? 'work'
+                  : (lh >= wStart - 1 && lh < wEnd + 2) ? 'fringe' : 'sleep';
+          var isBest = scores[H] === best && best > 0;
+          tr += '<td class="h ' + cls + (isBest ? ' best' : '') + '"><span>' + fmtHour(lh) + '</span></td>';
+        }
+        return tr + '</tr>';
+      }).join('');
+
+      document.getElementById('grid').innerHTML = head + body;
+
+      var note = document.getElementById('best-note');
+      var bestHours = [];
+      for (var H = 0; H < 24; H++) if (scores[H] === best && best > 0) bestHours.push(fmtHour(H));
+      note.innerHTML = best > 0
+        ? '<span class="pill accent">Best overlap</span> <strong>' + best + '/' + rows.length +
+          '</strong> cities in working hours at <strong>' + bestHours.join(', ') + '</strong> ' +
+          '<span class="muted">(' + anchorTz.replace(/_/g,' ') + ' time)</span>'
+        : '<span class="muted">Add cities to see overlap.</span>';
+    }
+
+    function gmtLabel(delta) {
+      if (Math.abs(delta) < 0.01) return '(anchor)';
+      var s = delta > 0 ? '+' : '−';
+      var a = Math.abs(delta);
+      return '(' + s + (Number.isInteger(a) ? a : a.toFixed(1)) + 'h)';
+    }
+
+    function clampInt(id, lo, hi, def) {
+      var v = parseInt(document.getElementById(id).value, 10);
+      if (isNaN(v)) v = def; if (v < lo) v = lo; if (v > hi) v = hi;
+      return v;
+    }
+
+    function addCity() {
+      var tz = document.getElementById('city-tz').value;
+      var label = document.getElementById('city-label').value.trim() || tz.split('/').pop().replace(/_/g, ' ');
+      var c = getCities(); c.push({ label: label, tz: tz }); setCities(c);
+      document.getElementById('city-label').value = '';
+      render();
+    }
+    function resetCities() { setCities(DEFAULT_CITIES.slice()); render(); }
+
+    // init
+    fillZoneSelects();
+    document.getElementById('date').value = new Date().toISOString().slice(0, 10);
+    ['anchor','date','wstart','wend'].forEach(function (id) {
+      document.getElementById(id).addEventListener('input', render);
+    });
+    render();
+  </script>
+</body>
+</html>

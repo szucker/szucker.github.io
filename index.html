@@ -1,95 +1,205 @@
-<!DOCTYPE HTML>
-<!--
-	Identity by HTML5 UP
-	html5up.net | @ajlkn
-	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
--->
-<html>
-	<head>
-		<title>Identity by HTML5 UP</title>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<!--[if lte IE 8]><script src="assets/js/html5shiv.js"></script><![endif]-->
-		<link rel="stylesheet" href="assets/css/main.css" />
-		<!--[if lte IE 9]><link rel="stylesheet" href="assets/css/ie9.css" /><![endif]-->
-		<!--[if lte IE 8]><link rel="stylesheet" href="assets/css/ie8.css" /><![endif]-->
-		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
-	</head>
-	<body class="is-loading">
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Command Center</title>
+  <link rel="stylesheet" href="assets/css/tools.css" />
+  <script src="assets/js/tools.js"></script>
+</head>
+<body data-base="">
+  <div class="wrap">
 
-		<!-- Wrapper -->
-			<div id="wrapper">
+    <div class="page-head">
+      <h1 id="greeting">Good day.</h1>
+      <p id="subline" class="mono"></p>
+    </div>
 
-				<!-- Main -->
-					<section id="main">
-						<header>
-							<span class="avatar"><img style="height: 122px" src=http://cdn2.johnnyseeds.com/images/product/large/1814.jpg alt="" /></span>
-							<h1>SUNFLOWER</h1>
-							<p>It is yellow and beautiful</p>
-						</header>
-						<!--
-						<hr />
-						<h2>Extra Stuff!</h2>
-						<form method="post" action="#">
-							<div class="field">
-								<input type="text" name="name" id="name" placeholder="Name" />
-							</div>
-							<div class="field">
-								<input type="email" name="email" id="email" placeholder="Email" />
-							</div>
-							<div class="field">
-								<div class="select-wrapper">
-									<select name="department" id="department">
-										<option value="">Department</option>
-										<option value="sales">Sales</option>
-										<option value="tech">Tech Support</option>
-										<option value="null">/dev/null</option>
-									</select>
-								</div>
-							</div>
-							<div class="field">
-								<textarea name="message" id="message" placeholder="Message" rows="4"></textarea>
-							</div>
-							<div class="field">
-								<input type="checkbox" id="human" name="human" /><label for="human">I'm a human</label>
-							</div>
-							<div class="field">
-								<label>But are you a robot?</label>
-								<input type="radio" id="robot_yes" name="robot" /><label for="robot_yes">Yes</label>
-								<input type="radio" id="robot_no" name="robot" /><label for="robot_no">No</label>
-							</div>
-							<ul class="actions">
-								<li><a href="#" class="button">Get Started</a></li>
-							</ul>
-						</form>
-						<hr />
-						-->
-						<footer>
-							<ul class="icons">
-								<li><a href="http://www.twitter.com" class="fa-twitter">Twitter</a></li>
-								<li><a href="#" class="fa-instagram">Instagram</a></li>
-								<li><a href="#" class="fa-facebook">Facebook</a></li>
-							</ul>
-						</footer>
-					</section>
+    <!-- World clocks -->
+    <div class="card">
+      <div class="row between">
+        <h2 class="section" style="margin:0">World Clocks</h2>
+        <button class="btn ghost sm" onclick="editClocks()">Edit</button>
+      </div>
+      <div id="clocks" class="grid cols-4" style="margin-top:12px"></div>
+    </div>
 
-				<!-- Footer -->
-					<footer id="footer">
-						<ul class="copyright">
-							<li>&copy; Jane Doe</li><li>Design: <a href="http://html5up.net">HTML5 UP</a></li>
-						</ul>
-					</footer>
+    <!-- Today's focus -->
+    <h2 class="section">Today&rsquo;s Top 3</h2>
+    <div class="card">
+      <div id="focus-list"></div>
+    </div>
 
-			</div>
+    <!-- Tools -->
+    <h2 class="section">Tools</h2>
+    <div class="grid cols-3">
+      <a class="tool-card" href="tools/timezones.html">
+        <div class="ico">🌍</div><h3>Time-Zone Planner</h3>
+        <p>Find meeting windows that work across capitals.</p>
+      </a>
+      <a class="tool-card" href="tools/reading.html">
+        <div class="ico">📚</div><h3>Reading Queue</h3>
+        <p>Capture articles &amp; books; triage by priority.</p>
+      </a>
+      <a class="tool-card" href="tools/tasks.html">
+        <div class="ico">✓</div><h3>Tasks &amp; Projects</h3>
+        <p>Track commitments across your portfolio.</p>
+      </a>
+      <a class="tool-card" href="tools/focus.html">
+        <div class="ico">⏱️</div><h3>Deep-Work Timer</h3>
+        <p>Focused writing sessions with breaks.</p>
+      </a>
+      <a class="tool-card" href="tools/notes.html">
+        <div class="ico">📝</div><h3>Scratchpad</h3>
+        <p>Autosaving Markdown notes; export anytime.</p>
+      </a>
+      <a class="tool-card" href="#sources">
+        <div class="ico">📰</div><h3>Sources</h3>
+        <p>Quick-launch curated news &amp; research.</p>
+      </a>
+    </div>
 
-		<!-- Scripts -->
-			<!--[if lte IE 8]><script src="assets/js/respond.min.js"></script><![endif]-->
-			<script>
-				if ('addEventListener' in window) {
-					window.addEventListener('load', function() { document.body.className = document.body.className.replace(/\bis-loading\b/, ''); });
-					document.body.className += (navigator.userAgent.match(/(MSIE|rv:11\.0)/) ? ' is-ie' : '');
-				}
-			</script>
+    <!-- Sources -->
+    <h2 class="section" id="sources">Quick Sources</h2>
+    <div class="card">
+      <div id="sources-list" class="row"></div>
+      <hr class="sep" />
+      <div class="row">
+        <input type="text" id="src-label" placeholder="Label (e.g. Foreign Affairs)" style="flex:2 1 180px" />
+        <input type="url" id="src-url" placeholder="https://…" style="flex:3 1 220px" />
+        <button class="btn primary sm" onclick="addSource()">Add</button>
+      </div>
+    </div>
 
-	</body>
+    <p class="footer-note">All data lives in your browser (localStorage). Nothing is uploaded.</p>
+  </div>
+
+  <script>
+    CC.buildTopbar('home');
+
+    /* ---------- Greeting + subline ---------- */
+    var NAME_KEY = 'cc.name';
+    function greet() {
+      var h = new Date().getHours();
+      var part = h < 5 ? 'Still up' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+      var name = CC.load(NAME_KEY, '');
+      var g = document.getElementById('greeting');
+      g.textContent = part + (name ? ', ' + name : '') + '.';
+      g.style.cursor = 'text';
+      g.title = 'Click to set your name';
+      g.onclick = function () {
+        var n = prompt('Your name (blank to clear):', CC.load(NAME_KEY, ''));
+        if (n !== null) { CC.save(NAME_KEY, n.trim()); greet(); }
+      };
+      var now = new Date();
+      document.getElementById('subline').textContent =
+        now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    /* ---------- World clocks ---------- */
+    var CLOCK_KEY = 'cc.clocks';
+    var DEFAULT_CLOCKS = [
+      { label: 'Washington', tz: 'America/New_York' },
+      { label: 'London', tz: 'Europe/London' },
+      { label: 'Brussels', tz: 'Europe/Brussels' },
+      { label: 'Moscow', tz: 'Europe/Moscow' },
+      { label: 'Tel Aviv', tz: 'Asia/Jerusalem' },
+      { label: 'New Delhi', tz: 'Asia/Kolkata' },
+      { label: 'Beijing', tz: 'Asia/Shanghai' },
+      { label: 'Tokyo', tz: 'Asia/Tokyo' }
+    ];
+    function getClocks() { return CC.load(CLOCK_KEY, DEFAULT_CLOCKS); }
+    function renderClocks() {
+      var host = document.getElementById('clocks');
+      var clocks = getClocks();
+      host.innerHTML = clocks.map(function (c) {
+        var d = new Date();
+        var time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: c.tz });
+        var day = d.toLocaleDateString('en-US', { weekday: 'short', timeZone: c.tz });
+        var hr = parseInt(d.toLocaleString('en-US', { hour: '2-digit', hour12: false, timeZone: c.tz }), 10);
+        var working = hr >= 8 && hr < 19;
+        return '<div class="card" style="box-shadow:none;padding:12px 14px">' +
+          '<div class="row between"><span style="font-weight:600">' + CC.esc(c.label) + '</span>' +
+          '<span class="pill ' + (working ? 'good' : '') + '">' + day + '</span></div>' +
+          '<div class="mono" style="font-size:1.35rem;margin-top:4px">' + time + '</div></div>';
+      }).join('');
+    }
+    function editClocks() {
+      var cur = getClocks().map(function (c) { return c.label + ' | ' + c.tz; }).join('\n');
+      var txt = prompt(
+        'One clock per line as "Label | IANA_TimeZone".\n' +
+        'Examples: Kyiv | Europe/Kyiv,  Doha | Asia/Qatar', cur);
+      if (txt === null) return;
+      var parsed = txt.split('\n').map(function (l) {
+        var p = l.split('|'); return { label: (p[0] || '').trim(), tz: (p[1] || '').trim() };
+      }).filter(function (c) { return c.label && c.tz; });
+      // validate tz
+      var bad = parsed.filter(function (c) {
+        try { new Date().toLocaleString('en-US', { timeZone: c.tz }); return false; }
+        catch (e) { return true; }
+      });
+      if (bad.length) { alert('Unknown time zone(s): ' + bad.map(function (b) { return b.tz; }).join(', ')); return; }
+      CC.save(CLOCK_KEY, parsed);
+      renderClocks();
+    }
+
+    /* ---------- Today's Top 3 ---------- */
+    var FOCUS_KEY = 'cc.focus';
+    function getFocus() {
+      var f = CC.load(FOCUS_KEY, null);
+      var today = new Date().toISOString().slice(0, 10);
+      if (!f || f.date !== today) { f = { date: today, items: [{t:'',done:false},{t:'',done:false},{t:'',done:false}] }; }
+      return f;
+    }
+    function renderFocus() {
+      var f = getFocus();
+      var host = document.getElementById('focus-list');
+      host.innerHTML = f.items.map(function (it, i) {
+        return '<div class="row" style="padding:6px 0">' +
+          '<input type="checkbox" ' + (it.done ? 'checked' : '') + ' onchange="toggleFocus(' + i + ')" style="width:auto" />' +
+          '<input type="text" value="' + CC.esc(it.t) + '" placeholder="Priority ' + (i+1) + '…" ' +
+          'oninput="setFocus(' + i + ', this.value)" style="flex:1;' + (it.done ? 'text-decoration:line-through;opacity:.55' : '') + '" />' +
+          '</div>';
+      }).join('');
+    }
+    function setFocus(i, v) { var f = getFocus(); f.items[i].t = v; CC.save(FOCUS_KEY, f); }
+    function toggleFocus(i) { var f = getFocus(); f.items[i].done = !f.items[i].done; CC.save(FOCUS_KEY, f); renderFocus(); }
+
+    /* ---------- Sources ---------- */
+    var SRC_KEY = 'cc.sources';
+    var DEFAULT_SOURCES = [
+      { label: 'Foreign Affairs', url: 'https://www.foreignaffairs.com' },
+      { label: 'CFR', url: 'https://www.cfr.org' },
+      { label: 'FT', url: 'https://www.ft.com' },
+      { label: 'The Economist', url: 'https://www.economist.com' },
+      { label: 'Reuters World', url: 'https://www.reuters.com/world/' },
+      { label: 'War on the Rocks', url: 'https://warontherocks.com' }
+    ];
+    function getSources() { return CC.load(SRC_KEY, DEFAULT_SOURCES); }
+    function renderSources() {
+      var host = document.getElementById('sources-list');
+      var s = getSources();
+      if (!s.length) { host.innerHTML = '<span class="muted">No sources yet.</span>'; return; }
+      host.innerHTML = s.map(function (x, i) {
+        return '<span class="pill accent" style="padding-right:4px">' +
+          '<a href="' + CC.esc(x.url) + '" target="_blank" rel="noopener">' + CC.esc(x.label) + '</a>' +
+          '<button class="btn ghost sm" style="padding:0 4px" onclick="delSource(' + i + ')" title="Remove">×</button></span>';
+      }).join('');
+    }
+    function addSource() {
+      var l = document.getElementById('src-label').value.trim();
+      var u = document.getElementById('src-url').value.trim();
+      if (!l || !u) return;
+      if (!/^https?:\/\//.test(u)) u = 'https://' + u;
+      var s = getSources(); s.push({ label: l, url: u }); CC.save(SRC_KEY, s);
+      document.getElementById('src-label').value = ''; document.getElementById('src-url').value = '';
+      renderSources();
+    }
+    function delSource(i) { var s = getSources(); s.splice(i, 1); CC.save(SRC_KEY, s); renderSources(); }
+
+    greet(); renderClocks(); renderFocus(); renderSources();
+    setInterval(renderClocks, 15000);
+    setInterval(greet, 60000);
+  </script>
+</body>
 </html>
