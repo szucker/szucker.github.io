@@ -15,27 +15,13 @@
       <p id="subline" class="mono"></p>
     </div>
 
-    <!-- World clocks -->
-    <div class="card">
-      <div class="row between">
-        <h2 class="section" style="margin:0">World Clocks</h2>
-        <button class="btn ghost sm" onclick="editClocks()">Edit</button>
-      </div>
-      <div id="clocks" class="grid cols-4" style="margin-top:12px"></div>
+    <!-- Today's plan (hero) -->
+    <div class="row between">
+      <h2 class="section" style="margin:22px 0 12px">Today</h2>
+      <a class="btn ghost sm" href="tools/calendar.html">Open calendar →</a>
     </div>
-
-    <!-- Beat the scroll -->
-    <h2 class="section">Beat the Scroll</h2>
-    <div class="card" id="scroll-card">
-      <div class="row between" style="margin-bottom:8px">
-        <span class="muted" style="font-size:.85rem">Got a few minutes? Do this instead:</span>
-        <div class="row" style="gap:6px">
-          <button class="btn ghost sm" onclick="rollSuggestion(10)">10m</button>
-          <button class="btn ghost sm" onclick="rollSuggestion(25)">25m</button>
-          <button class="btn ghost sm" onclick="rollSuggestion(60)">60m</button>
-        </div>
-      </div>
-      <div id="scroll-sugg"></div>
+    <div class="card">
+      <div id="today-plan"></div>
     </div>
 
     <!-- Today's focus -->
@@ -44,12 +30,29 @@
       <div id="focus-list"></div>
     </div>
 
+    <!-- World clocks -->
+    <div class="row between">
+      <h2 class="section" style="margin:26px 0 12px">World Clocks</h2>
+      <button class="btn ghost sm" onclick="editClocks()">Edit</button>
+    </div>
+    <div class="card">
+      <div id="clocks" class="grid cols-4"></div>
+    </div>
+
     <!-- Tools -->
     <h2 class="section">Tools</h2>
     <div class="grid cols-3">
+      <a class="tool-card" href="tools/calendar.html">
+        <div class="ico">📅</div><h3>Calendar</h3>
+        <p>Import your .ics; free time auto-filled with blocks.</p>
+      </a>
       <a class="tool-card" href="tools/planner.html">
         <div class="ico">🗓️</div><h3>Planner</h3>
         <p>Weekly grid by area, daily agenda &amp; downtime coach.</p>
+      </a>
+      <a class="tool-card" href="tools/contacts.html">
+        <div class="ico">🤝</div><h3>People</h3>
+        <p>CRM: connections, interaction log &amp; upkeep.</p>
       </a>
       <a class="tool-card" href="tools/timezones.html">
         <div class="ico">🌍</div><h3>Time-Zone Planner</h3>
@@ -78,10 +81,6 @@
       <a class="tool-card" href="tools/countdowns.html">
         <div class="ico">📅</div><h3>Countdowns</h3>
         <p>Days until summits, elections &amp; deadlines.</p>
-      </a>
-      <a class="tool-card" href="tools/contacts.html">
-        <div class="ico">🤝</div><h3>Contact Cadence</h3>
-        <p>Keep your network warm on purpose.</p>
       </a>
       <a class="tool-card" href="tools/meeting-cost.html">
         <div class="ico">💸</div><h3>Meeting Cost</h3>
@@ -137,14 +136,12 @@
     /* ---------- World clocks ---------- */
     var CLOCK_KEY = 'cc.clocks';
     var DEFAULT_CLOCKS = [
-      { label: 'Washington', tz: 'America/New_York' },
+      { label: 'New York', tz: 'America/New_York' },
+      { label: 'Chicago', tz: 'America/Chicago' },
       { label: 'London', tz: 'Europe/London' },
-      { label: 'Brussels', tz: 'Europe/Brussels' },
-      { label: 'Moscow', tz: 'Europe/Moscow' },
-      { label: 'Tel Aviv', tz: 'Asia/Jerusalem' },
-      { label: 'New Delhi', tz: 'Asia/Kolkata' },
-      { label: 'Beijing', tz: 'Asia/Shanghai' },
-      { label: 'Tokyo', tz: 'Asia/Tokyo' }
+      { label: 'Paris / Berlin', tz: 'Europe/Paris' },
+      { label: 'Cape Town', tz: 'Africa/Johannesburg' },
+      { label: 'Beijing / Singapore', tz: 'Asia/Singapore' }
     ];
     function getClocks() { return CC.load(CLOCK_KEY, DEFAULT_CLOCKS); }
     function renderClocks() {
@@ -207,11 +204,9 @@
     var SRC_KEY = 'cc.sources';
     var DEFAULT_SOURCES = [
       { label: 'Foreign Affairs', url: 'https://www.foreignaffairs.com' },
-      { label: 'CFR', url: 'https://www.cfr.org' },
       { label: 'FT', url: 'https://www.ft.com' },
       { label: 'The Economist', url: 'https://www.economist.com' },
-      { label: 'Reuters World', url: 'https://www.reuters.com/world/' },
-      { label: 'War on the Rocks', url: 'https://warontherocks.com' }
+      { label: 'Reuters World', url: 'https://www.reuters.com/world/' }
     ];
     function getSources() { return CC.load(SRC_KEY, DEFAULT_SOURCES); }
     function renderSources() {
@@ -235,35 +230,48 @@
     }
     function delSource(i) { var s = getSources(); s.splice(i, 1); CC.save(SRC_KEY, s); renderSources(); }
 
-    /* ---------- Beat the scroll (shared engine) ---------- */
-    var scrollMins = 25, scrollTop = null;
-    function rollSuggestion(mins) {
-      scrollMins = mins;
-      var list = CC.buildSuggestions(mins);
-      var host = document.getElementById('scroll-sugg');
-      if (!list.length) {
-        host.innerHTML = '<div class="muted" style="font-size:.9rem">Set up activities in the ' +
-          '<a href="tools/planner.html">Planner</a> or queue articles in <a href="tools/reading.html">Reading</a>.</div>';
-        return;
+    /* ---------- Today's plan preview (calendar + auto-blocks) ---------- */
+    function fmtT(d) { return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
+    function renderTodayPlan() {
+      var day = new Date(); day.setHours(0, 0, 0, 0);
+      var hasCal = !!CC.load('cc.calendar.importedAt', 0);
+      var plan = CC.buildDayPlan(day, CC.load('cc.calendar.window', { startH: 8, endH: 22 }));
+      var host = document.getElementById('today-plan');
+      var body = '';
+      if (plan.allday.length) {
+        body += '<div style="margin-bottom:10px">' + plan.allday.map(function (a) {
+          return '<span class="pill accent">📌 ' + CC.esc(a.summary || 'all day') + '</span>';
+        }).join(' ') + '</div>';
       }
-      scrollTop = list[0];
-      CC.markSuggested(scrollTop.key);
-      var c = scrollTop;
-      var linkBtn = c.link ? '<a class="btn sm" href="' + CC.esc(c.link) + '" target="_blank" rel="noopener">Open ↗</a>' : '';
-      host.innerHTML =
-        '<div style="border-left:4px solid ' + c.color + ';padding-left:12px">' +
-          '<span class="pill" style="background:transparent;color:' + c.color + '">' +
-            (c.areaName ? CC.esc(c.areaName) + ' · ' : '') + '~' + c.mins + ' min</span>' +
-          '<div style="font-size:1.15rem;font-weight:700;margin:4px 0 10px">' + CC.esc(c.label) + '</div>' +
-          '<div class="row">' + linkBtn +
-            '<a class="btn primary sm" href="tools/planner.html">Open planner</a>' +
-            '<button class="btn ghost sm" onclick="rollSuggestion(' + c.mins + ')">Something else ↻</button>' +
-          '</div></div>';
+      var items = plan.timed.map(function (e) { return { t: e.start, kind: 'm', e: e }; })
+        .concat(plan.suggestions.map(function (s) { return { t: s.start, kind: 's', s: s }; }))
+        .sort(function (a, b) { return a.t - b.t; }).slice(0, 7);
+      if (!items.length) {
+        body += '<div class="muted" style="font-size:.92rem">' + (hasCal
+          ? 'Nothing left on the calendar today and no open-time suggestions. 🎉'
+          : 'No calendar yet — <a href="tools/calendar.html">import your .ics</a> and your day (with suggested blocks) shows up here.') + '</div>';
+      } else {
+        body += items.map(function (it) {
+          var time = '<span class="mono" style="display:inline-block;width:74px;color:var(--text-faint);font-size:.82rem">' + fmtT(it.t) + '</span>';
+          if (it.kind === 'm') {
+            var e = it.e;
+            return '<div class="row" style="padding:8px 0;border-bottom:1px solid var(--border)">' + time +
+              '<span style="font-weight:600">' + CC.esc(e.summary || '(busy)') + '</span>' +
+              '<span class="muted" style="font-size:.78rem"> · ' + fmtT(e.start) + '–' + fmtT(e.end) + '</span></div>';
+          }
+          var c = it.s.cand;
+          return '<div class="row" style="padding:8px 0;border-bottom:1px solid var(--border)">' + time +
+            '<span style="border-left:3px solid ' + c.color + ';padding-left:9px">' + CC.esc(c.label) +
+            ' <span class="muted" style="font-size:.76rem">· suggested</span></span></div>';
+        }).join('');
+      }
+      host.innerHTML = body;
     }
 
-    greet(); renderClocks(); renderFocus(); renderSources(); rollSuggestion(25);
+    greet(); renderClocks(); renderFocus(); renderSources(); renderTodayPlan();
     setInterval(renderClocks, 15000);
     setInterval(greet, 60000);
+    setInterval(renderTodayPlan, 300000);
   </script>
 </body>
 </html>
