@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Library · Command Center</title>
+  <link rel="stylesheet" href="../assets/css/tools.css" />
+  <script src="../assets/js/tools.js"></script>
+  <style>
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    @media (max-width: 720px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+    .stat { text-align: center; }
+    .stat .n { font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; }
+    .stat .l { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--text-faint); }
+    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .book { display: grid; grid-template-columns: 46px 1fr auto; gap: 12px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .book:last-child { border-bottom: none; }
+    .cover { width: 46px; height: 66px; border-radius: 5px; object-fit: cover; background: var(--bg-sunk); display: grid; place-items: center; color: var(--text-faint); font-size: 1.3rem; }
+    .book .bt { font-weight: 600; }
+    .book .ba { color: var(--text-soft); font-size: .88rem; }
+    .book .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 5px; }
+    .book .val { text-align: right; white-space: nowrap; }
+    .book .val .v { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .loc-head { font-size: .82rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-faint);
+      font-weight: 700; margin: 18px 0 2px; display: flex; justify-content: space-between; }
+    dialog { border: 1px solid var(--border); border-radius: var(--radius); padding: 0; background: var(--bg-elev); color: var(--text); max-width: 540px; width: 92%; box-shadow: var(--shadow); }
+    dialog::backdrop { background: rgba(0,0,0,.45); }
+    .dlg-body { padding: 20px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-grid .full { grid-column: 1 / -1; }
+    @media (max-width: 520px) { .form-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body data-base="../">
+  <div class="wrap">
+    <div class="page-head">
+      <h1>Library</h1>
+      <p>Catalogue your books — edition, estimated used value, and where each one lives on the shelf. Photograph a shelf, hand it to me in chat, and I'll drop the entries straight in here.</p>
+    </div>
+
+    <div class="card">
+      <div class="stats">
+        <div class="stat"><div class="n" id="s-count">0</div><div class="l">Books</div></div>
+        <div class="stat"><div class="n" id="s-value">$0</div><div class="l">Est. value</div></div>
+        <div class="stat"><div class="n" id="s-locs">0</div><div class="l">Locations</div></div>
+        <div class="stat"><div class="n" id="s-sale">0</div><div class="l">Flagged to sell</div></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="toolbar">
+        <input type="text" id="search" placeholder="Search title, author, tag…" oninput="render()" style="flex:2 1 200px" />
+        <select id="filter-loc" onchange="render()" style="flex:1 1 150px"><option value="">All locations</option></select>
+        <select id="sort" onchange="render()" style="width:150px">
+          <option value="loc">By location</option>
+          <option value="value">By value ↓</option>
+          <option value="title">By title</option>
+          <option value="author">By author</option>
+          <option value="added">Recently added</option>
+        </select>
+        <button class="btn primary sm" onclick="openAdd()">+ Add book</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px"><div id="list"></div></div>
+
+    <div class="row between" style="margin-top:14px">
+      <span class="muted" id="foot" style="font-size:.82rem"></span>
+      <div class="row">
+        <button class="btn ghost sm" onclick="document.getElementById('imp').click()">Import JSON</button>
+        <input type="file" id="imp" accept="application/json,.json" style="display:none" />
+        <button class="btn ghost sm" onclick="exportJSON()">Export JSON</button>
+        <button class="btn ghost sm" onclick="exportCSV()">Export CSV</button>
+      </div>
+    </div>
+    <p class="footer-note">Stored locally in your browser. Estimated values are guesses for planning/insurance, not appraisals.</p>
+  </div>
+
+  <!-- Add/Edit dialog -->
+  <dialog id="dlg">
+    <div class="dlg-body">
+      <h2 class="section" id="dlg-title" style="margin-top:0">Add book</h2>
+      <div class="form-grid">
+        <div class="full"><label class="fld">Title</label><input type="text" id="f-title" /></div>
+        <div class="full"><label class="fld">Author</label><input type="text" id="f-author" /></div>
+        <div><label class="fld">Edition (guess)</label><input type="text" id="f-edition" placeholder="e.g. 1st, 2019 reprint" /></div>
+        <div><label class="fld">Year</label><input type="text" id="f-year" /></div>
+        <div><label class="fld">Format</label>
+          <select id="f-format"><option>Hardcover</option><option>Paperback</option><option>Trade PB</option><option>Other</option></select></div>
+        <div><label class="fld">Condition</label>
+          <select id="f-cond"><option>New</option><option>Like New</option><option selected>Very Good</option><option>Good</option><option>Fair</option><option>Poor</option></select></div>
+        <div><label class="fld">Est. value (USD)</label><input type="number" id="f-value" min="0" step="1" /></div>
+        <div><label class="fld">Location / shelf</label><input type="text" id="f-loc" placeholder="e.g. Living room · Shelf 3" list="loclist" /></div>
+        <div class="full"><label class="fld">Tags (comma-separated)</label><input type="text" id="f-tags" placeholder="fiction, signed, china" /></div>
+        <div class="full"><label class="fld">Cover image URL (optional)</label><input type="url" id="f-cover" placeholder="https://…" /></div>
+        <div class="full"><label class="row" style="gap:8px;cursor:pointer"><input type="checkbox" id="f-sale" style="width:auto" /> Flag to sell</label></div>
+        <div class="full"><label class="fld">Notes</label><input type="text" id="f-notes" /></div>
+      </div>
+      <datalist id="loclist"></datalist>
+      <div class="row between" style="margin-top:16px">
+        <button class="btn danger sm" id="dlg-del" onclick="deleteCurrent()" style="visibility:hidden">Delete</button>
+        <div class="row"><button class="btn ghost sm" onclick="closeDlg()">Cancel</button>
+          <button class="btn primary sm" onclick="saveBook()">Save</button></div>
+      </div>
+    </div>
+  </dialog>
+
+  <script>
+    CC.buildTopbar('library');
+    var KEY = 'cc.library';
+    var editingId = null;
+    function all() { return CC.load(KEY, []); }
+    function setAll(x) { CC.save(KEY, x); }
+    var money = function (n) { return '$' + Math.round(n || 0).toLocaleString('en-US'); };
+
+    function openAdd() { editingId = null; fill({}); document.getElementById('dlg-title').textContent = 'Add book';
+      document.getElementById('dlg-del').style.visibility = 'hidden'; refreshLocList(); document.getElementById('dlg').showModal(); document.getElementById('f-title').focus(); }
+    function openEdit(id) { var b = all().find(function (x) { return x.id === id; }); if (!b) return; editingId = id; fill(b);
+      document.getElementById('dlg-title').textContent = 'Edit book'; document.getElementById('dlg-del').style.visibility = 'visible'; refreshLocList(); document.getElementById('dlg').showModal(); }
+    function closeDlg() { document.getElementById('dlg').close(); }
+    function fill(b) {
+      var g = function (id) { return document.getElementById(id); };
+      g('f-title').value = b.title || ''; g('f-author').value = b.author || ''; g('f-edition').value = b.edition || '';
+      g('f-year').value = b.year || ''; g('f-format').value = b.format || 'Paperback'; g('f-cond').value = b.condition || 'Very Good';
+      g('f-value').value = b.value != null ? b.value : ''; g('f-loc').value = b.location || '';
+      g('f-tags').value = (b.tags || []).join(', '); g('f-cover').value = b.cover || ''; g('f-sale').checked = !!b.forSale; g('f-notes').value = b.notes || '';
+    }
+    function saveBook() {
+      var g = function (id) { return document.getElementById(id).value.trim(); };
+      var title = g('f-title'); if (!title) { document.getElementById('f-title').focus(); return; }
+      var rec = { title: title, author: g('f-author'), edition: g('f-edition'), year: g('f-year'),
+        format: document.getElementById('f-format').value, condition: document.getElementById('f-cond').value,
+        value: parseFloat(g('f-value')) || 0, location: g('f-loc'),
+        tags: g('f-tags').split(',').map(function (t) { return t.trim(); }).filter(Boolean),
+        cover: g('f-cover'), forSale: document.getElementById('f-sale').checked, notes: g('f-notes') };
+      var a = all();
+      if (editingId) { var i = a.findIndex(function (x) { return x.id === editingId; }); if (i >= 0) a[i] = Object.assign(a[i], rec); }
+      else { rec.id = CC.uid(); rec.added = CC.todayStr(); a.push(rec); }
+      setAll(a); closeDlg(); render();
+    }
+    function deleteCurrent() { if (editingId && confirm('Delete this book?')) { setAll(all().filter(function (x) { return x.id !== editingId; })); closeDlg(); render(); } }
+
+    function locations() {
+      var s = {}; all().forEach(function (b) { var l = b.location || 'Unfiled'; s[l] = (s[l] || 0) + 1; }); return s;
+    }
+    function refreshLocList() {
+      document.getElementById('loclist').innerHTML = Object.keys(locations()).map(function (l) { return '<option value="' + CC.esc(l) + '">'; }).join('');
+    }
+
+    function render() {
+      var books = all();
+      var total = books.reduce(function (a, b) { return a + (+b.value || 0); }, 0);
+      var locs = locations();
+      document.getElementById('s-count').textContent = books.length;
+      document.getElementById('s-value').textContent = money(total);
+      document.getElementById('s-locs').textContent = Object.keys(locs).length;
+      document.getElementById('s-sale').textContent = books.filter(function (b) { return b.forSale; }).length;
+
+      var flt = document.getElementById('filter-loc');
+      var curFlt = flt.value;
+      flt.innerHTML = '<option value="">All locations</option>' + Object.keys(locs).sort().map(function (l) {
+        return '<option value="' + CC.esc(l) + '"' + (l === curFlt ? ' selected' : '') + '>' + CC.esc(l) + ' (' + locs[l] + ')</option>';
+      }).join('');
+      refreshLocList();
+
+      var q = document.getElementById('search').value.toLowerCase();
+      var sort = document.getElementById('sort').value;
+      var shown = books.filter(function (b) {
+        if (curFlt && (b.location || 'Unfiled') !== curFlt) return false;
+        if (!q) return true;
+        return (b.title + ' ' + (b.author || '') + ' ' + (b.tags || []).join(' ') + ' ' + (b.edition || '')).toLowerCase().indexOf(q) >= 0;
+      });
+
+      var host = document.getElementById('list');
+      if (!shown.length) {
+        host.innerHTML = '<div class="empty">' + (books.length ? 'No matches.' : 'No books yet. Click <b>+ Add book</b>, or send me a shelf photo and I\'ll fill this in.') + '</div>';
+      } else if (sort === 'loc') {
+        var groups = {};
+        shown.forEach(function (b) { var l = b.location || 'Unfiled'; (groups[l] = groups[l] || []).push(b); });
+        host.innerHTML = Object.keys(groups).sort().map(function (l) {
+          var sub = groups[l].reduce(function (a, b) { return a + (+b.value || 0); }, 0);
+          return '<div class="loc-head"><span>' + CC.esc(l) + '</span><span>' + money(sub) + '</span></div>' +
+            groups[l].sort(byTitle).map(bookRow).join('');
+        }).join('');
+      } else {
+        var cmp = sort === 'value' ? function (a, b) { return (+b.value || 0) - (+a.value || 0); }
+          : sort === 'author' ? function (a, b) { return (a.author || '').localeCompare(b.author || ''); }
+          : sort === 'added' ? function (a, b) { return (b.added || '').localeCompare(a.added || ''); }
+          : byTitle;
+        host.innerHTML = shown.slice().sort(cmp).map(bookRow).join('');
+      }
+      document.getElementById('foot').textContent = shown.length + ' shown · ' + books.length + ' total · ' + money(total) + ' estimated';
+    }
+    function byTitle(a, b) { return (a.title || '').localeCompare(b.title || ''); }
+    function bookRow(b) {
+      var cover = b.cover ? '<img class="cover" src="' + CC.esc(b.cover) + '" alt="" onerror="this.replaceWith(document.createTextNode(\'\'))" />' : '<div class="cover">📖</div>';
+      var meta = [];
+      if (b.edition) meta.push('<span class="pill">' + CC.esc(b.edition) + '</span>');
+      if (b.condition) meta.push('<span class="pill">' + CC.esc(b.condition) + '</span>');
+      if (b.forSale) meta.push('<span class="pill warn">for sale</span>');
+      (b.tags || []).forEach(function (t) { meta.push('<span class="pill">#' + CC.esc(t) + '</span>'); });
+      return '<div class="book" onclick="openEdit(\'' + b.id + '\')" style="cursor:pointer">' +
+        cover +
+        '<div><div class="bt">' + CC.esc(b.title) + (b.year ? ' <span class="muted">(' + CC.esc(b.year) + ')</span>' : '') + '</div>' +
+        '<div class="ba">' + CC.esc(b.author || '') + (b.format ? ' · ' + CC.esc(b.format) : '') + '</div>' +
+        '<div class="meta">' + meta.join(' ') + '</div></div>' +
+        '<div class="val"><div class="v">' + money(b.value) + '</div>' +
+        (b.location ? '<div class="muted" style="font-size:.72rem">' + CC.esc(b.location) + '</div>' : '') + '</div></div>';
+    }
+
+    /* import / export */
+    function exportJSON() {
+      var blob = new Blob([JSON.stringify(all(), null, 2)], { type: 'application/json' });
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'library.json'; a.click();
+    }
+    function exportCSV() {
+      var cols = ['title', 'author', 'edition', 'year', 'format', 'condition', 'value', 'location', 'tags', 'forSale', 'notes'];
+      var esc = function (v) { v = v == null ? '' : Array.isArray(v) ? v.join('; ') : String(v); return '"' + v.replace(/"/g, '""') + '"'; };
+      var rows = [cols.join(',')].concat(all().map(function (b) { return cols.map(function (c) { return esc(b[c]); }).join(','); }));
+      var blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'library.csv'; a.click();
+    }
+    document.getElementById('imp').addEventListener('change', function (e) {
+      var f = e.target.files[0]; if (!f) return;
+      var r = new FileReader();
+      r.onload = function (ev) {
+        var arr; try { arr = JSON.parse(ev.target.result); } catch (x) { alert('Could not read that JSON file.'); return; }
+        if (!Array.isArray(arr)) { alert('Expected a JSON array of books.'); return; }
+        var a = all();
+        arr.forEach(function (b) {
+          if (!b || !b.title) return;
+          b.id = b.id || CC.uid(); b.added = b.added || CC.todayStr();
+          b.tags = Array.isArray(b.tags) ? b.tags : (b.tags ? String(b.tags).split(',').map(function (t) { return t.trim(); }).filter(Boolean) : []);
+          b.value = parseFloat(b.value) || 0;
+          a.push(b);
+        });
+        setAll(a); render(); alert('Imported ' + arr.length + ' books.');
+      };
+      r.readAsText(f);
+    });
+
+    document.getElementById('dlg').addEventListener('click', function (e) { if (e.target === this) closeDlg(); });
+    render();
+  </script>
+</body>
+</html>

@@ -55,6 +55,7 @@
       { id: 'focus', href: base + 'tools/focus.html', label: 'Focus' }
     ];
     var more = [
+      { id: 'library', href: base + 'tools/library.html', label: 'Library' },
       { id: 'notes', href: base + 'tools/notes.html', label: 'Notes' },
       { id: 'tz', href: base + 'tools/timezones.html', label: 'Time Zones' },
       { id: 'tasks', href: base + 'tools/tasks.html', label: 'Tasks & Projects' },
