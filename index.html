@@ -24,6 +24,20 @@
       <div id="clocks" class="grid cols-4" style="margin-top:12px"></div>
     </div>
 
+    <!-- Beat the scroll -->
+    <h2 class="section">Beat the Scroll</h2>
+    <div class="card" id="scroll-card">
+      <div class="row between" style="margin-bottom:8px">
+        <span class="muted" style="font-size:.85rem">Got a few minutes? Do this instead:</span>
+        <div class="row" style="gap:6px">
+          <button class="btn ghost sm" onclick="rollSuggestion(10)">10m</button>
+          <button class="btn ghost sm" onclick="rollSuggestion(25)">25m</button>
+          <button class="btn ghost sm" onclick="rollSuggestion(60)">60m</button>
+        </div>
+      </div>
+      <div id="scroll-sugg"></div>
+    </div>
+
     <!-- Today's focus -->
     <h2 class="section">Today&rsquo;s Top 3</h2>
     <div class="card">
@@ -33,6 +47,10 @@
     <!-- Tools -->
     <h2 class="section">Tools</h2>
     <div class="grid cols-3">
+      <a class="tool-card" href="tools/planner.html">
+        <div class="ico">🗓️</div><h3>Planner</h3>
+        <p>Weekly grid by area, daily agenda &amp; downtime coach.</p>
+      </a>
       <a class="tool-card" href="tools/timezones.html">
         <div class="ico">🌍</div><h3>Time-Zone Planner</h3>
         <p>Find meeting windows that work across capitals.</p>
@@ -213,7 +231,33 @@
     }
     function delSource(i) { var s = getSources(); s.splice(i, 1); CC.save(SRC_KEY, s); renderSources(); }
 
-    greet(); renderClocks(); renderFocus(); renderSources();
+    /* ---------- Beat the scroll (shared engine) ---------- */
+    var scrollMins = 25, scrollTop = null;
+    function rollSuggestion(mins) {
+      scrollMins = mins;
+      var list = CC.buildSuggestions(mins);
+      var host = document.getElementById('scroll-sugg');
+      if (!list.length) {
+        host.innerHTML = '<div class="muted" style="font-size:.9rem">Set up activities in the ' +
+          '<a href="tools/planner.html">Planner</a> or queue articles in <a href="tools/reading.html">Reading</a>.</div>';
+        return;
+      }
+      scrollTop = list[0];
+      CC.markSuggested(scrollTop.key);
+      var c = scrollTop;
+      var linkBtn = c.link ? '<a class="btn sm" href="' + CC.esc(c.link) + '" target="_blank" rel="noopener">Open ↗</a>' : '';
+      host.innerHTML =
+        '<div style="border-left:4px solid ' + c.color + ';padding-left:12px">' +
+          '<span class="pill" style="background:transparent;color:' + c.color + '">' +
+            (c.areaName ? CC.esc(c.areaName) + ' · ' : '') + '~' + c.mins + ' min</span>' +
+          '<div style="font-size:1.15rem;font-weight:700;margin:4px 0 10px">' + CC.esc(c.label) + '</div>' +
+          '<div class="row">' + linkBtn +
+            '<a class="btn primary sm" href="tools/planner.html">Open planner</a>' +
+            '<button class="btn ghost sm" onclick="rollSuggestion(' + c.mins + ')">Something else ↻</button>' +
+          '</div></div>';
+    }
+
+    greet(); renderClocks(); renderFocus(); renderSources(); rollSuggestion(25);
     setInterval(renderClocks, 15000);
     setInterval(greet, 60000);
   </script>
