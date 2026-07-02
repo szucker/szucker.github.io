@@ -137,14 +137,12 @@
     /* ---------- World clocks ---------- */
     var CLOCK_KEY = 'cc.clocks';
     var DEFAULT_CLOCKS = [
-      { label: 'Washington', tz: 'America/New_York' },
+      { label: 'New York', tz: 'America/New_York' },
+      { label: 'Chicago', tz: 'America/Chicago' },
       { label: 'London', tz: 'Europe/London' },
-      { label: 'Brussels', tz: 'Europe/Brussels' },
-      { label: 'Moscow', tz: 'Europe/Moscow' },
-      { label: 'Tel Aviv', tz: 'Asia/Jerusalem' },
-      { label: 'New Delhi', tz: 'Asia/Kolkata' },
-      { label: 'Beijing', tz: 'Asia/Shanghai' },
-      { label: 'Tokyo', tz: 'Asia/Tokyo' }
+      { label: 'Paris / Berlin', tz: 'Europe/Paris' },
+      { label: 'Cape Town', tz: 'Africa/Johannesburg' },
+      { label: 'Beijing / Singapore', tz: 'Asia/Singapore' }
     ];
     function getClocks() { return CC.load(CLOCK_KEY, DEFAULT_CLOCKS); }
     function renderClocks() {
@@ -207,11 +205,9 @@
     var SRC_KEY = 'cc.sources';
     var DEFAULT_SOURCES = [
       { label: 'Foreign Affairs', url: 'https://www.foreignaffairs.com' },
-      { label: 'CFR', url: 'https://www.cfr.org' },
       { label: 'FT', url: 'https://www.ft.com' },
       { label: 'The Economist', url: 'https://www.economist.com' },
-      { label: 'Reuters World', url: 'https://www.reuters.com/world/' },
-      { label: 'War on the Rocks', url: 'https://warontherocks.com' }
+      { label: 'Reuters World', url: 'https://www.reuters.com/world/' }
     ];
     function getSources() { return CC.load(SRC_KEY, DEFAULT_SOURCES); }
     function renderSources() {

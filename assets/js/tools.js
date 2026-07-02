@@ -89,7 +89,7 @@
      Shared so the dashboard and the planner stay in sync.
      ============================================================ */
   var DEFAULT_AREAS = [
-    { id: 'work', name: 'Work / CFR', color: '#3b6fe0' },
+    { id: 'work', name: 'Work', color: '#3b6fe0' },
     { id: 'academic', name: 'Academic reading', color: '#8b4df0' },
     { id: 'chinese', name: 'Chinese', color: '#d84b44' },
     { id: 'reading', name: 'Reading queue', color: '#1f9e6b' },
@@ -203,4 +203,41 @@
     }
     CC.markSuggested(cand.key);
   };
+
+  /* ---- Relationship (CRM) helpers ---- */
+  CC.contactLastDate = function (c) {
+    if (c.interactions && c.interactions.length) {
+      return c.interactions.map(function (i) { return i.date; }).sort().slice(-1)[0];
+    }
+    return c.last && c.last !== '1970-01-01' ? c.last : null;
+  };
+  CC.contactsDue = function () {
+    var now = new Date(); now.setHours(0, 0, 0, 0);
+    return CC.load('cc.contacts', []).map(function (c) {
+      var last = CC.contactLastDate(c);
+      var since = last ? Math.round((now - new Date(last + 'T00:00:00')) / 86400000) : 99999;
+      var frac = c.cadence ? since / c.cadence : 0;
+      return { c: c, last: last, since: since, frac: frac, overdue: c.cadence ? frac >= 1 : false };
+    }).sort(function (a, b) { return b.frac - a.frac; });
+  };
+
+  /* ---- One-time data migrations (safe, idempotent) ---- */
+  CC.migrate = function () {
+    var v = CC.load('cc.migrated', 0);
+    if (v < 1) {
+      var areas = CC.load('cc.planner.areas', null);
+      if (areas) {
+        var changed = false;
+        areas.forEach(function (a) { if (a.id === 'work' && a.name === 'Work / CFR') { a.name = 'Work'; changed = true; } });
+        if (changed) CC.save('cc.planner.areas', areas);
+      }
+      var src = CC.load('cc.sources', null);
+      if (src) {
+        var f = src.filter(function (s) { return !/cfr\.org/i.test(s.url || '') && s.label !== 'CFR'; });
+        if (f.length !== src.length) CC.save('cc.sources', f);
+      }
+      CC.save('cc.migrated', 1);
+    }
+  };
+  CC.migrate();
 })();
