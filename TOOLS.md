@@ -19,6 +19,11 @@ Open `index.html` (your site root) for the dashboard hub.
 | **Tasks & Projects** | `tools/tasks.html` | Task lists grouped by project/portfolio, with due dates; overdue items turn red. |
 | **Deep-Work Timer** | `tools/focus.html` | Pomodoro-style focus blocks (25/5, 50/10, 90/15, or custom) with a chime, desktop notification, and a daily session/minute count. |
 | **Scratchpad** | `tools/notes.html` | Autosaving Markdown notes with live split-preview and one-click `.md` export — good for call prep, meeting minutes, memo drafts. |
+| **Writing Meter** | `tools/writing.html` | Paste a draft for word count, reading/speaking time, Flesch–Kincaid readability, and a list of over-long sentences to tighten. |
+| **Countdowns** | `tools/countdowns.html` | Days-until board for summits, elections, deadlines, and travel; near-term dates flag red. |
+| **Contact Cadence** | `tools/contacts.html` | Set how often to reach each person; overdue contacts rise to the top with a progress bar. |
+| **Meeting Cost** | `tools/meeting-cost.html` | Attendees × loaded hourly rate × duration, annualized — a reality check on standing meetings. |
+| **Shutdown Routine** | `tools/shutdown.html` | An editable end-of-day checklist that resets each morning. |
 
 Design notes:
 - Shared look-and-feel via `assets/css/tools.css`; shared helpers in `assets/js/tools.js`.
@@ -39,14 +44,10 @@ you think about where a file goes.
 
 ## Further ideas (roadmap)
 
-Things that stay fully client-side (easy to add next):
-- **Meeting-cost calculator** — attendees × loaded hourly rate × duration; a gentle nudge on standing meetings.
-- **Word-count / readability meter** for memo drafts (target length, reading time, sentence-length flags).
-- **Countdown board** — days until key dates (summits, elections, deadlines, travel).
+Still on the client-side list (not yet built):
 - **Decision log** — timestamped record of decisions + rationale, searchable.
-- **Contact-cadence tracker** — "who haven't I talked to in 90 days?" for network upkeep.
 - **Per-diem / expense scratch** for trips, with quick currency math against a stored rate.
-- **Daily shutdown checklist** — a repeatable end-of-day routine that resets each morning.
+- **Data backup/restore** — one file that exports/imports every `cc.*` key, to move between machines.
 
 Things that would need an API key or a small backend (worth it if you want them):
 - **Live currency & FX** (exchangerate.host / ECB) instead of a manually stored rate.

@@ -43,10 +43,10 @@
   };
 
   // ---- Build the top bar consistently across pages ----
-  // pages: array of {href, label, id}; active = id of current page
+  // Primary pages sit inline; the rest fold into a "More" dropdown.
   CC.buildTopbar = function (active) {
     var base = (document.body.getAttribute('data-base') || '');
-    var pages = [
+    var primary = [
       { id: 'home', href: base + 'index.html', label: 'Dashboard' },
       { id: 'tz', href: base + 'tools/timezones.html', label: 'Time Zones' },
       { id: 'reading', href: base + 'tools/reading.html', label: 'Reading' },
@@ -54,9 +54,21 @@
       { id: 'focus', href: base + 'tools/focus.html', label: 'Focus' },
       { id: 'notes', href: base + 'tools/notes.html', label: 'Notes' }
     ];
-    var nav = pages.map(function (p) {
+    var more = [
+      { id: 'writing', href: base + 'tools/writing.html', label: 'Writing Meter' },
+      { id: 'countdowns', href: base + 'tools/countdowns.html', label: 'Countdowns' },
+      { id: 'contacts', href: base + 'tools/contacts.html', label: 'Contacts' },
+      { id: 'meeting', href: base + 'tools/meeting-cost.html', label: 'Meeting Cost' },
+      { id: 'shutdown', href: base + 'tools/shutdown.html', label: 'Shutdown' }
+    ];
+    function link(p) {
       return '<a href="' + p.href + '"' + (p.id === active ? ' class="active"' : '') + '>' + p.label + '</a>';
-    }).join('');
+    }
+    var nav = primary.map(link).join('');
+    var moreActive = more.some(function (p) { return p.id === active; });
+    var dropdown =
+      '<div class="dropdown"><button class="drop-btn' + (moreActive ? ' active' : '') + '">More ▾</button>' +
+      '<div class="drop-menu">' + more.map(link).join('') + '</div></div>';
     var cur = document.documentElement.getAttribute('data-theme');
     var icon = cur === 'dark' ? '☀️' : '\u{1F319}';
     var el = document.createElement('div');
@@ -64,7 +76,7 @@
     el.innerHTML =
       '<a class="brand" href="' + base + 'index.html" style="text-decoration:none">' +
         '<span class="dot"></span> Command Center</a>' +
-      '<nav>' + nav + '</nav>' +
+      '<nav>' + nav + dropdown + '</nav>' +
       '<span class="spacer"></span>' +
       '<button class="theme-toggle" title="Toggle theme" onclick="CC.toggleTheme()">' + icon + '</button>';
     document.body.insertBefore(el, document.body.firstChild);

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Countdowns · Command Center</title>
+  <link rel="stylesheet" href="../assets/css/tools.css" />
+  <script src="../assets/js/tools.js"></script>
+  <style>
+    .cd { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+    .cd:last-child { border-bottom: none; }
+    .cd .days { font-size: 2rem; font-weight: 800; font-variant-numeric: tabular-nums; min-width: 84px; text-align: center; letter-spacing: -.02em; }
+    .cd .days small { display: block; font-size: .62rem; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--text-faint); }
+    .cd .info { flex: 1; }
+    .cd .info .t { font-weight: 600; }
+    .cd .info .d { font-size: .8rem; color: var(--text-faint); }
+    .cd.past { opacity: .55; }
+    .cd.past .days { color: var(--text-faint); }
+    .cd.soon .days { color: var(--danger); }
+  </style>
+</head>
+<body data-base="../">
+  <div class="wrap">
+    <div class="page-head">
+      <h1>Countdowns</h1>
+      <p>Days until the things you're tracking — summits, elections, deadlines, travel, embargoes.</p>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <input type="text" id="c-title" placeholder="What's happening?" style="flex:2 1 200px" />
+        <input type="date" id="c-date" style="width:170px" />
+        <button class="btn primary" onclick="add()">Add</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px"><div id="list"></div></div>
+    <p class="footer-note">Stored locally in your browser.</p>
+  </div>
+
+  <script>
+    CC.buildTopbar('countdowns');
+    var KEY = 'cc.countdowns';
+    function all() { return CC.load(KEY, []); }
+    function setAll(x) { CC.save(KEY, x); }
+
+    function add() {
+      var t = document.getElementById('c-title').value.trim();
+      var d = document.getElementById('c-date').value;
+      if (!t || !d) return;
+      var x = all(); x.push({ id: CC.uid(), title: t, date: d }); setAll(x);
+      document.getElementById('c-title').value = ''; document.getElementById('c-date').value = '';
+      render();
+    }
+    function del(id) { setAll(all().filter(function (e) { return e.id !== id; })); render(); }
+
+    function daysUntil(dateStr) {
+      var today = new Date(); today.setHours(0, 0, 0, 0);
+      var target = new Date(dateStr + 'T00:00:00');
+      return Math.round((target - today) / 86400000);
+    }
+
+    function render() {
+      var items = all().slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+      var host = document.getElementById('list');
+      if (!items.length) { host.innerHTML = '<div class="empty">Nothing tracked yet. Add a date above.</div>'; return; }
+      host.innerHTML = items.map(function (e) {
+        var n = daysUntil(e.date);
+        var past = n < 0, soon = n >= 0 && n <= 7;
+        var big = past ? Math.abs(n) : n;
+        var label = past ? 'days ago' : (n === 0 ? 'today' : 'days');
+        var when = new Date(e.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' });
+        return '<div class="cd ' + (past ? 'past' : soon ? 'soon' : '') + '">' +
+          '<div class="days">' + (n === 0 ? '🎯' : big) + '<small>' + label + '</small></div>' +
+          '<div class="info"><div class="t">' + CC.esc(e.title) + '</div><div class="d">' + when + '</div></div>' +
+          '<button class="btn ghost sm" onclick="del(\'' + e.id + '\')">×</button></div>';
+      }).join('');
+    }
+
+    document.getElementById('c-title').addEventListener('keydown', function (e) { if (e.key === 'Enter') add(); });
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Contact Cadence · Command Center</title>
+  <link rel="stylesheet" href="../assets/css/tools.css" />
+  <script src="../assets/js/tools.js"></script>
+  <style>
+    .ct { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .ct:last-child { border-bottom: none; }
+    .ct .who { flex: 1; min-width: 0; }
+    .ct .who .n { font-weight: 600; }
+    .ct .who .m { font-size: .78rem; color: var(--text-faint); }
+    .ct .status { text-align: right; white-space: nowrap; }
+    .bar { height: 5px; border-radius: 3px; background: var(--bg-sunk); margin-top: 6px; overflow: hidden; }
+    .bar > i { display: block; height: 100%; }
+  </style>
+</head>
+<body data-base="../">
+  <div class="wrap">
+    <div class="page-head">
+      <h1>Contact Cadence</h1>
+      <p>Stay in touch on purpose. Set how often you want to reach someone; overdue contacts rise to the top.</p>
+    </div>
+
+    <div class="card">
+      <div class="grid cols-3">
+        <div><label class="fld">Name</label><input type="text" id="c-name" placeholder="Full name" /></div>
+        <div><label class="fld">Note (org, topic)</label><input type="text" id="c-note" placeholder="e.g. MFA, Indo-Pacific" /></div>
+        <div><label class="fld">Reach out every</label>
+          <select id="c-cad">
+            <option value="14">2 weeks</option>
+            <option value="30" selected>Monthly</option>
+            <option value="90">Quarterly</option>
+            <option value="180">Twice a year</option>
+            <option value="365">Yearly</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <label class="fld" style="margin:0">Last contact</label>
+        <input type="date" id="c-last" style="width:170px" />
+        <button class="btn primary" onclick="add()">Add contact</button>
+        <span class="muted" style="font-size:.8rem">Leave date blank to start "due now."</span>
+      </div>
+    </div>
+
+    <div class="row between" style="margin:22px 0 8px">
+      <span class="muted" id="count"></span>
+      <button class="btn ghost sm" onclick="exportJSON()">Export</button>
+    </div>
+    <div class="card"><div id="list"></div></div>
+    <p class="footer-note">Stored locally in your browser. This tracks intent, not your actual inbox.</p>
+  </div>
+
+  <script>
+    CC.buildTopbar('contacts');
+    var KEY = 'cc.contacts';
+    function all() { return CC.load(KEY, []); }
+    function setAll(x) { CC.save(KEY, x); }
+    function today() { return new Date().toISOString().slice(0, 10); }
+
+    function add() {
+      var name = document.getElementById('c-name').value.trim();
+      if (!name) { document.getElementById('c-name').focus(); return; }
+      var x = all();
+      x.push({
+        id: CC.uid(), name: name,
+        note: document.getElementById('c-note').value.trim(),
+        cadence: parseInt(document.getElementById('c-cad').value, 10),
+        last: document.getElementById('c-last').value || '1970-01-01'
+      });
+      setAll(x);
+      ['c-name', 'c-note', 'c-last'].forEach(function (i) { document.getElementById(i).value = ''; });
+      render();
+    }
+    function touch(id) { var x = all(); var c = x.find(function (e) { return e.id === id; }); if (c) c.last = today(); setAll(x); render(); }
+    function del(id) { setAll(all().filter(function (e) { return e.id !== id; })); render(); }
+    function exportJSON() {
+      var blob = new Blob([JSON.stringify(all(), null, 2)], { type: 'application/json' });
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'contacts.json'; a.click();
+    }
+
+    function daysSince(dateStr) {
+      var d = new Date(dateStr + 'T00:00:00'); var now = new Date(); now.setHours(0, 0, 0, 0);
+      return Math.round((now - d) / 86400000);
+    }
+
+    function render() {
+      var items = all().map(function (c) {
+        var since = daysSince(c.last);
+        var frac = c.cadence ? since / c.cadence : 1;
+        return Object.assign({}, c, { since: since, frac: frac, overdue: frac >= 1 });
+      }).sort(function (a, b) { return b.frac - a.frac; });
+
+      var host = document.getElementById('list');
+      if (!items.length) { host.innerHTML = '<div class="empty">No contacts yet. Add someone above.</div>'; }
+      else {
+        host.innerHTML = items.map(function (c) {
+          var pct = Math.min(100, Math.round(c.frac * 100));
+          var color = c.frac >= 1 ? 'var(--danger)' : c.frac >= 0.75 ? 'var(--warn)' : 'var(--good)';
+          var never = c.last === '1970-01-01';
+          var statusText = never ? '<span class="pill danger">never logged</span>'
+            : c.overdue ? '<span class="pill danger">' + (c.since - c.cadence) + 'd overdue</span>'
+            : '<span class="pill good">in ' + (c.cadence - c.since) + 'd</span>';
+          var lastText = never ? 'no contact logged' : c.since + 'd ago · every ' + c.cadence + 'd';
+          return '<div class="ct"><div class="who"><div class="n">' + CC.esc(c.name) +
+            (c.note ? ' <span class="m">— ' + CC.esc(c.note) + '</span>' : '') + '</div>' +
+            '<div class="bar"><i style="width:' + pct + '%;background:' + color + '"></i></div>' +
+            '<div class="m" style="margin-top:4px">' + lastText + '</div></div>' +
+            '<div class="status">' + statusText + '</div>' +
+            '<button class="btn sm" onclick="touch(\'' + c.id + '\')" title="Mark contacted today">✓ today</button>' +
+            '<button class="btn ghost sm" onclick="del(\'' + c.id + '\')">×</button></div>';
+        }).join('');
+      }
+      var due = items.filter(function (c) { return c.overdue; }).length;
+      document.getElementById('count').textContent = items.length + ' contacts · ' + due + ' due now';
+    }
+
+    document.getElementById('c-name').addEventListener('keydown', function (e) { if (e.key === 'Enter') add(); });
+    render();
+  </script>
+</body>
+</html>

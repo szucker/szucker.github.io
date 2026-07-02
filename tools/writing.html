@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Writing Meter · Command Center</title>
+  <link rel="stylesheet" href="../assets/css/tools.css" />
+  <script src="../assets/js/tools.js"></script>
+  <style>
+    .wm-layout { display: grid; grid-template-columns: 1fr 300px; gap: 16px; }
+    @media (max-width: 860px) { .wm-layout { grid-template-columns: 1fr; } }
+    #wtext { min-height: 58vh; resize: vertical; font-size: 1rem; line-height: 1.7; }
+    .metric { display: flex; justify-content: space-between; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--border); }
+    .metric:last-child { border-bottom: none; }
+    .metric .v { font-weight: 700; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+    .metric .k { color: var(--text-soft); font-size: .88rem; }
+    .flag { font-size: .84rem; padding: 8px 10px; border-radius: 9px; margin-top: 6px; }
+    .flag.long { background: var(--warn-soft); color: var(--warn); }
+    .grade-pill { font-size: .8rem; }
+  </style>
+</head>
+<body data-base="../">
+  <div class="wrap">
+    <div class="page-head">
+      <h1>Writing Meter</h1>
+      <p>Paste a draft to see length, reading/speaking time, readability, and over-long sentences. Nothing is saved unless you keep the tab open.</p>
+    </div>
+
+    <div class="wm-layout">
+      <div class="card" style="padding:0">
+        <textarea id="wtext" placeholder="Paste or write your memo, op-ed, or remarks here…" style="border:none;border-radius:0;padding:16px"></textarea>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="metric"><span class="k">Words</span><span class="v" id="m-words">0</span></div>
+          <div class="metric"><span class="k">Sentences</span><span class="v" id="m-sent">0</span></div>
+          <div class="metric"><span class="k">Avg words/sentence</span><span class="v" id="m-avg">0</span></div>
+          <div class="metric"><span class="k">Characters</span><span class="v" id="m-chars">0</span></div>
+          <div class="metric"><span class="k">Reading time</span><span class="v" id="m-read">0m</span></div>
+          <div class="metric"><span class="k">Speaking time</span><span class="v" id="m-speak">0m</span></div>
+        </div>
+
+        <div class="card" style="margin-top:14px">
+          <h2 class="section" style="margin-top:0">Readability</h2>
+          <div class="metric"><span class="k">Flesch reading ease</span><span class="v" id="m-flesch">–</span></div>
+          <div class="metric"><span class="k">Grade level</span><span class="v" id="m-grade">–</span></div>
+          <div id="grade-note" class="muted" style="font-size:.82rem;margin-top:8px"></div>
+        </div>
+
+        <div class="card" style="margin-top:14px">
+          <h2 class="section" style="margin-top:0">Sentences to tighten</h2>
+          <div id="long-list"><div class="muted" style="font-size:.84rem">Long sentences (25+ words) will appear here.</div></div>
+        </div>
+      </div>
+    </div>
+    <p class="footer-note">Reading at 230 wpm, speaking at 130 wpm. Readability via Flesch–Kincaid (syllables estimated).</p>
+  </div>
+
+  <script>
+    CC.buildTopbar('writing');
+    var KEY = 'cc.writing.draft';
+    var ta = document.getElementById('wtext');
+    ta.value = CC.load(KEY, '');
+
+    function countSyllables(word) {
+      word = word.toLowerCase().replace(/[^a-z]/g, '');
+      if (!word) return 0;
+      if (word.length <= 3) return 1;
+      word = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '').replace(/^y/, '');
+      var m = word.match(/[aeiouy]{1,2}/g);
+      return m ? m.length : 1;
+    }
+
+    function analyze() {
+      var text = ta.value;
+      CC.save(KEY, text);
+      var trimmed = text.trim();
+      var words = trimmed ? trimmed.split(/\s+/) : [];
+      var wordCount = words.length;
+      var chars = text.length;
+      // sentences: split on . ! ? … keeping non-empty
+      var sentences = trimmed ? trimmed.split(/[.!?]+(?:\s|$)/).map(function (s) { return s.trim(); }).filter(Boolean) : [];
+      var sentCount = sentences.length || (wordCount ? 1 : 0);
+      var avg = sentCount ? (wordCount / sentCount) : 0;
+      var syll = words.reduce(function (a, w) { return a + countSyllables(w); }, 0);
+
+      document.getElementById('m-words').textContent = wordCount;
+      document.getElementById('m-sent').textContent = sentCount;
+      document.getElementById('m-avg').textContent = avg.toFixed(1);
+      document.getElementById('m-chars').textContent = chars;
+      document.getElementById('m-read').textContent = fmtMin(wordCount / 230);
+      document.getElementById('m-speak').textContent = fmtMin(wordCount / 130);
+
+      if (wordCount >= 20 && sentCount) {
+        var wps = wordCount / sentCount, spw = syll / wordCount;
+        var flesch = 206.835 - 1.015 * wps - 84.6 * spw;
+        var grade = 0.39 * wps + 11.8 * spw - 15.59;
+        document.getElementById('m-flesch').textContent = Math.round(flesch);
+        document.getElementById('m-grade').textContent = grade > 0 ? grade.toFixed(1) : '<1';
+        document.getElementById('grade-note').textContent = fleschNote(flesch);
+      } else {
+        document.getElementById('m-flesch').textContent = '–';
+        document.getElementById('m-grade').textContent = '–';
+        document.getElementById('grade-note').textContent = 'Write at least ~20 words for a reliable score.';
+      }
+
+      // long sentences
+      var longs = sentences.map(function (s) { return { s: s, n: s.split(/\s+/).length }; })
+        .filter(function (x) { return x.n >= 25; })
+        .sort(function (a, b) { return b.n - a.n; }).slice(0, 5);
+      var host = document.getElementById('long-list');
+      if (!longs.length) {
+        host.innerHTML = '<div class="muted" style="font-size:.84rem">No sentences over 25 words. 👍</div>';
+      } else {
+        host.innerHTML = longs.map(function (x) {
+          var preview = x.s.length > 120 ? x.s.slice(0, 120) + '…' : x.s;
+          return '<div class="flag long"><strong>' + x.n + ' words</strong> — ' + CC.esc(preview) + '</div>';
+        }).join('');
+      }
+    }
+    function fmtMin(m) {
+      if (m < 1) return Math.max(0, Math.round(m * 60)) + 's';
+      var mins = Math.floor(m), secs = Math.round((m - mins) * 60);
+      return mins + 'm' + (secs ? ' ' + secs + 's' : '');
+    }
+    function fleschNote(f) {
+      if (f >= 70) return 'Plain and easy — good for broad audiences.';
+      if (f >= 60) return 'Clear, conversational (≈8th–9th grade).';
+      if (f >= 50) return 'Fairly dense — typical of policy prose.';
+      if (f >= 30) return 'Difficult — long sentences and jargon. Consider tightening.';
+      return 'Very dense / academic. Break up sentences and cut jargon.';
+    }
+
+    ta.addEventListener('input', analyze);
+    analyze();
+  </script>
+</body>
+</html>

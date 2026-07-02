@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Meeting Cost · Command Center</title>
+  <link rel="stylesheet" href="../assets/css/tools.css" />
+  <script src="../assets/js/tools.js"></script>
+  <style>
+    .big-num { font-size: 2.8rem; font-weight: 800; letter-spacing: -.02em; }
+    .big-num.year { color: var(--danger); }
+    .out-row { display: flex; justify-content: space-between; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .out-row:last-child { border-bottom: none; }
+    .out-row .v { font-weight: 700; font-variant-numeric: tabular-nums; }
+    input[type=range] { width: 100%; }
+  </style>
+</head>
+<body data-base="../">
+  <div class="wrap">
+    <div class="page-head">
+      <h1>Meeting Cost</h1>
+      <p>A quick reality check on that standing meeting. Cost = attendees × loaded hourly rate × duration.</p>
+    </div>
+
+    <div class="grid cols-2">
+      <div class="card">
+        <div><label class="fld">Attendees: <span id="lbl-people">6</span></label>
+          <input type="range" id="people" min="1" max="40" value="6" /></div>
+        <div style="margin-top:16px"><label class="fld">Duration: <span id="lbl-mins">60</span> min</label>
+          <input type="range" id="mins" min="15" max="240" step="15" value="60" /></div>
+        <div style="margin-top:16px"><label class="fld">Avg salary (annual, USD)</label>
+          <input type="number" id="salary" value="150000" min="0" step="5000" /></div>
+        <div style="margin-top:16px"><label class="fld">Repeats</label>
+          <select id="freq">
+            <option value="0">One-off</option>
+            <option value="52" selected>Weekly</option>
+            <option value="26">Every 2 weeks</option>
+            <option value="12">Monthly</option>
+            <option value="250">Daily (workdays)</option>
+          </select></div>
+        <p class="muted" style="font-size:.8rem;margin-top:14px">
+          Loaded rate ≈ salary ÷ 2,080 working hours × 1.3 (benefits/overhead).</p>
+      </div>
+
+      <div class="card" style="display:flex;flex-direction:column;justify-content:center">
+        <div class="muted" style="font-size:.82rem;text-transform:uppercase;letter-spacing:.06em">This meeting</div>
+        <div class="big-num" id="per">$0</div>
+        <hr class="sep" />
+        <div class="out-row"><span>Cost per hour</span><span class="v" id="hr">$0</span></div>
+        <div class="out-row"><span>Person-hours spent</span><span class="v" id="ph">0</span></div>
+        <div class="out-row"><span id="annual-lbl">Annualized</span><span class="v" id="annual">$0</span></div>
+        <div class="out-row"><span>Person-days/year</span><span class="v" id="pd">0</span></div>
+        <div id="verdict" style="margin-top:14px"></div>
+      </div>
+    </div>
+    <p class="footer-note">A rough estimate to inform, not to bill. Adjust the multiplier assumptions to taste.</p>
+  </div>
+
+  <script>
+    CC.buildTopbar('meeting');
+    var el = function (id) { return document.getElementById(id); };
+    var fmt = function (n) { return '$' + Math.round(n).toLocaleString('en-US'); };
+
+    function calc() {
+      var people = +el('people').value;
+      var mins = +el('mins').value;
+      var salary = Math.max(0, +el('salary').value || 0);
+      var freq = +el('freq').value;
+
+      el('lbl-people').textContent = people;
+      el('lbl-mins').textContent = mins;
+
+      var hourly = (salary / 2080) * 1.3;
+      var hours = mins / 60;
+      var per = people * hourly * hours;
+      var personHours = people * hours;
+
+      el('per').textContent = fmt(per);
+      el('hr').textContent = fmt(people * hourly);
+      el('ph').textContent = personHours.toFixed(1);
+
+      if (freq > 0) {
+        var annual = per * freq;
+        el('annual-lbl').textContent = 'Annualized (×' + freq + ')';
+        el('annual').textContent = fmt(annual);
+        el('pd').textContent = (personHours * freq / 8).toFixed(0);
+      } else {
+        el('annual-lbl').textContent = 'Annualized';
+        el('annual').textContent = '—';
+        el('pd').textContent = '—';
+      }
+
+      var v = el('verdict');
+      if (freq > 0 && per * freq > 100000) {
+        v.innerHTML = '<span class="pill danger">Worth scrutinizing — this recurring meeting exceeds $100k/yr.</span>';
+      } else if (per > 1000) {
+        v.innerHTML = '<span class="pill warn">A pricey room. Is a memo faster?</span>';
+      } else {
+        v.innerHTML = '<span class="pill good">Reasonable.</span>';
+      }
+    }
+
+    ['people', 'mins', 'salary', 'freq'].forEach(function (id) { el(id).addEventListener('input', calc); });
+    calc();
+  </script>
+</body>
+</html>

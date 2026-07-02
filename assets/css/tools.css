@@ -89,6 +89,22 @@ a:hover { text-decoration: underline; }
 }
 .topbar nav a:hover { background: var(--bg-sunk); text-decoration: none; color: var(--text); }
 .topbar nav a.active { background: var(--accent-soft); color: var(--accent); }
+.topbar .dropdown { position: relative; }
+.topbar .drop-btn {
+  color: var(--text-soft); font-size: .88rem; padding: 6px 11px; border-radius: 999px;
+  font-weight: 500; border: none; background: transparent; cursor: pointer; font-family: var(--sans);
+}
+.topbar .drop-btn:hover { background: var(--bg-sunk); color: var(--text); }
+.topbar .drop-btn.active { background: var(--accent-soft); color: var(--accent); }
+.topbar .drop-menu {
+  display: none; position: absolute; right: 0; top: calc(100% + 6px); min-width: 180px;
+  background: var(--bg-elev); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: var(--shadow); padding: 6px; z-index: 60;
+}
+.topbar .dropdown:hover .drop-menu, .topbar .dropdown:focus-within .drop-menu { display: block; }
+.topbar .drop-menu a { display: block; padding: 8px 12px; border-radius: 8px; color: var(--text-soft); font-size: .88rem; }
+.topbar .drop-menu a:hover { background: var(--bg-sunk); color: var(--text); text-decoration: none; }
+.topbar .drop-menu a.active { background: var(--accent-soft); color: var(--accent); }
 .topbar .spacer { flex: 1; }
 .theme-toggle {
   border: 1px solid var(--border); background: var(--bg-elev); color: var(--text-soft);
