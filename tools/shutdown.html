@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shutdown Routine · Command Center</title>
+  <link rel="stylesheet" href="../assets/css/tools.css" />
+  <script src="../assets/js/tools.js"></script>
+  <style>
+    .ck { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .ck:last-child { border-bottom: none; }
+    .ck label { flex: 1; cursor: pointer; }
+    .ck.checked label { text-decoration: line-through; color: var(--text-faint); }
+    .ck input { width: 20px; height: 20px; }
+    .progress { height: 8px; border-radius: 4px; background: var(--bg-sunk); overflow: hidden; margin: 4px 0 18px; }
+    .progress > i { display: block; height: 100%; background: var(--good); transition: width .2s; }
+    .done-banner { text-align: center; padding: 20px; }
+    .done-banner .big { font-size: 2rem; }
+  </style>
+</head>
+<body data-base="../">
+  <div class="wrap">
+    <div class="page-head">
+      <h1>Shutdown Routine</h1>
+      <p id="datep">A repeatable end-of-day ritual. It resets every morning so you start clean.</p>
+    </div>
+
+    <div class="card">
+      <div class="row between">
+        <span class="muted" id="prog-lbl">0 of 0</span>
+        <button class="btn ghost sm" onclick="editItems()">Edit list</button>
+      </div>
+      <div class="progress"><i id="prog-bar" style="width:0%"></i></div>
+      <div id="list"></div>
+      <div id="banner"></div>
+      <hr class="sep" />
+      <button class="btn ghost sm" onclick="resetToday()">Uncheck all</button>
+    </div>
+    <p class="footer-note">Your list and today's checkmarks are stored locally. Checkmarks clear at midnight.</p>
+  </div>
+
+  <script>
+    CC.buildTopbar('shutdown');
+    var ITEMS_KEY = 'cc.shutdown.items';
+    var STATE_KEY = 'cc.shutdown.state';
+    var DEFAULTS = [
+      'Triage inbox to zero-decision (reply, defer, or file)',
+      'Capture loose to-dos into Tasks',
+      'Set tomorrow’s Top 3',
+      'Skim calendar for tomorrow; prep any first meeting',
+      'Clear desktop / close stray tabs',
+      'Note one open loop to hand off to tomorrow',
+      'Say the words: "shutdown complete"'
+    ];
+
+    function items() { return CC.load(ITEMS_KEY, DEFAULTS); }
+    function setItems(x) { CC.save(ITEMS_KEY, x); }
+    function state() {
+      var s = CC.load(STATE_KEY, null);
+      var today = new Date().toISOString().slice(0, 10);
+      if (!s || s.date !== today) s = { date: today, checked: {} };
+      return s;
+    }
+    function setState(s) { CC.save(STATE_KEY, s); }
+
+    function toggle(i) { var s = state(); s.checked[i] = !s.checked[i]; setState(s); render(); }
+    function resetToday() { var s = state(); s.checked = {}; setState(s); render(); }
+    function editItems() {
+      var txt = prompt('One checklist item per line:', items().join('\n'));
+      if (txt === null) return;
+      var arr = txt.split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
+      if (arr.length) { setItems(arr); resetToday(); }
+    }
+
+    function render() {
+      var its = items(); var s = state();
+      var host = document.getElementById('list');
+      host.innerHTML = its.map(function (t, i) {
+        var on = !!s.checked[i];
+        return '<div class="ck ' + (on ? 'checked' : '') + '">' +
+          '<input type="checkbox" id="ck' + i + '" ' + (on ? 'checked' : '') + ' onchange="toggle(' + i + ')" />' +
+          '<label for="ck' + i + '">' + CC.esc(t) + '</label></div>';
+      }).join('');
+      var done = its.filter(function (_, i) { return s.checked[i]; }).length;
+      var pct = its.length ? Math.round(done / its.length * 100) : 0;
+      document.getElementById('prog-bar').style.width = pct + '%';
+      document.getElementById('prog-lbl').textContent = done + ' of ' + its.length + ' done';
+      document.getElementById('banner').innerHTML =
+        (done === its.length && its.length)
+          ? '<div class="done-banner"><div class="big">✅</div><strong>Shutdown complete.</strong><br><span class="muted">Close the laptop. See you tomorrow.</span></div>'
+          : '';
+      document.getElementById('datep').textContent =
+        new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) +
+        ' — a repeatable end-of-day ritual. Resets every morning.';
+    }
+    render();
+  </script>
+</body>
+</html>

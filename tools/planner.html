@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Planner · Command Center</title>
+  <link rel="stylesheet" href="../assets/css/tools.css" />
+  <script src="../assets/js/tools.js"></script>
+  <style>
+    .tabs { display: flex; gap: 6px; margin: 4px 0 18px; }
+    .tab { cursor: pointer; }
+    .pane { display: none; }
+    .pane.on { display: block; }
+
+    .wk-nav { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .wk-range { font-weight: 700; font-size: 1.05rem; }
+    .legend { display: flex; gap: 12px; flex-wrap: wrap; margin: 12px 0 4px; font-size: .8rem; color: var(--text-soft); }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+    .grid-scroll { overflow-x: auto; }
+    table.week { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 860px; }
+    .week th { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--text-faint);
+      padding: 8px 6px; font-weight: 700; text-align: center; border-bottom: 2px solid var(--border); }
+    .week th.today { color: var(--accent); }
+    .week th .dnum { font-size: 1rem; color: var(--text); display: block; }
+    .week td { vertical-align: top; padding: 7px 6px; border-bottom: 1px solid var(--border);
+      border-left: 1px solid var(--border); width: 12.5%; }
+    .week td.arealabel { border-left: none; font-weight: 600; font-size: .9rem; white-space: nowrap; }
+    .week td.today { background: var(--accent-soft); }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 7px; vertical-align: middle; }
+
+    .tk { display: block; font-size: .82rem; padding: 4px 8px; border-radius: 7px; margin-bottom: 5px;
+      border-left: 3px solid var(--border-strong); background: var(--bg-sunk); cursor: pointer; line-height: 1.35; }
+    .tk.done { opacity: .5; text-decoration: line-through; }
+    .tk .x { float: right; cursor: pointer; color: var(--text-faint); padding-left: 8px; }
+    .tk .hb { font-size: .6rem; text-transform: uppercase; letter-spacing: .07em; opacity: .8; display: block; }
+    .qa { width: 100%; border: 1px dashed var(--border-strong); background: transparent; color: var(--text);
+      font-size: .8rem; padding: 4px 6px; border-radius: 6px; margin-top: 2px; }
+    .qa:focus { border-style: solid; }
+
+    /* suggester */
+    .sugg-wrap { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    .time-chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 4px; }
+    .sugg-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; background: var(--bg);
+      border-left: 5px solid var(--accent); }
+    .sugg-card .label { font-size: 1.25rem; font-weight: 700; margin: 2px 0 8px; }
+    .sugg-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .alts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .alt { cursor: pointer; }
+
+    .agenda-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+    .agenda-item:last-child { border-bottom: none; }
+    .agenda-item.done .t { text-decoration: line-through; color: var(--text-faint); }
+    .agenda-item .t { flex: 1; }
+
+    /* setup */
+    .setup-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .setup-row:last-child { border-bottom: none; }
+    input[type=color] { width: 40px; height: 34px; padding: 2px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--bg); cursor: pointer; }
+    .dow { display: flex; gap: 4px; }
+    .dow button { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border-strong);
+      background: var(--bg-elev); color: var(--text-soft); cursor: pointer; font-size: .8rem; font-weight: 600; }
+    .dow button.on { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+  </style>
+</head>
+<body data-base="../">
+  <div class="wrap">
+    <div class="page-head">
+      <h1>Planner</h1>
+      <p>Your assignment book for grown-up responsibilities — plan the week by area, run the day, and turn dead time into progress instead of scrolling.</p>
+    </div>
+
+    <div class="tabs">
+      <span class="pill tab accent" data-tab="today" onclick="showTab('today')">Today</span>
+      <span class="pill tab" data-tab="week" onclick="showTab('week')">Week</span>
+      <span class="pill tab" data-tab="setup" onclick="showTab('setup')">Setup</span>
+    </div>
+
+    <!-- ===================== TODAY ===================== -->
+    <div class="pane on" id="pane-today">
+      <div class="card">
+        <div class="row between">
+          <h2 class="section" style="margin:0">Beat the scroll</h2>
+          <span class="muted" style="font-size:.82rem">How long have you got?</span>
+        </div>
+        <div class="time-chips">
+          <button class="btn sm" onclick="suggest(10)">~10 min</button>
+          <button class="btn sm" onclick="suggest(25)">~25 min</button>
+          <button class="btn sm" onclick="suggest(60)">~60 min</button>
+          <button class="btn ghost sm" onclick="customTime()">Custom…</button>
+        </div>
+        <div id="sugg" style="margin-top:10px"></div>
+      </div>
+
+      <h2 class="section" id="today-head">Today</h2>
+      <div class="card"><div id="agenda"></div></div>
+    </div>
+
+    <!-- ===================== WEEK ===================== -->
+    <div class="pane" id="pane-week">
+      <div class="card">
+        <div class="wk-nav">
+          <button class="btn sm" onclick="moveWeek(-1)">‹ Prev</button>
+          <button class="btn sm" onclick="moveWeek(0)">This week</button>
+          <button class="btn sm" onclick="moveWeek(1)">Next ›</button>
+          <span class="wk-range" id="wk-range"></span>
+        </div>
+        <div class="legend" id="legend"></div>
+      </div>
+      <div class="card grid-scroll" style="margin-top:16px">
+        <table class="week"><thead id="wk-head"></thead><tbody id="wk-body"></tbody></table>
+      </div>
+    </div>
+
+    <!-- ===================== SETUP ===================== -->
+    <div class="pane" id="pane-setup">
+      <h2 class="section">Areas of responsibility</h2>
+      <div class="card"><div id="areas-list"></div>
+        <hr class="sep" />
+        <div class="row">
+          <input type="text" id="na-name" placeholder="New area (e.g. Fitness)" style="flex:1" />
+          <input type="color" id="na-color" value="#3b6fe0" />
+          <button class="btn primary sm" onclick="addArea()">Add area</button>
+        </div>
+      </div>
+
+      <h2 class="section">Recurring habits</h2>
+      <p class="muted" style="font-size:.85rem;margin:-4px 0 10px">These auto-appear in the week grid on their days and feed the suggester.</p>
+      <div class="card"><div id="habits-list"></div>
+        <hr class="sep" />
+        <div class="row">
+          <input type="text" id="nh-text" placeholder="Habit (e.g. Study Chinese)" style="flex:2 1 180px" />
+          <select id="nh-area" style="width:150px"></select>
+          <input type="number" id="nh-mins" value="20" min="5" max="180" step="5" style="width:80px" title="minutes" />
+          <div class="dow" id="nh-dow"></div>
+          <button class="btn primary sm" onclick="addHabit()">Add</button>
+        </div>
+      </div>
+
+      <h2 class="section">Downtime activities</h2>
+      <p class="muted" style="font-size:.85rem;margin:-4px 0 10px">The menu the "beat the scroll" suggester draws from. Unread items from your Reading queue are added automatically.</p>
+      <div class="card"><div id="acts-list"></div>
+        <hr class="sep" />
+        <div class="row">
+          <input type="text" id="nc-name" placeholder="Activity" style="flex:2 1 180px" />
+          <select id="nc-area" style="width:150px"></select>
+          <input type="number" id="nc-mins" value="20" min="5" max="180" step="5" style="width:80px" title="minutes" />
+          <input type="url" id="nc-link" placeholder="link (optional)" style="flex:1 1 140px" />
+          <button class="btn primary sm" onclick="addAct()">Add</button>
+        </div>
+      </div>
+    </div>
+
+    <p class="footer-note">Everything is stored locally in your browser. Habits reset their checkmarks each day.</p>
+  </div>
+
+  <script>
+    CC.buildTopbar('planner');
+    CC.ensurePlannerDefaults();
+
+    var DOW_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']; // index = getDay()
+    var DOW_FULL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    var weekOffset = 0;
+    var newHabitDays = [1, 2, 3, 4, 5];
+
+    /* ---------- storage helpers ---------- */
+    function areas() { return CC.load('cc.planner.areas', CC.plannerDefaults.areas); }
+    function setAreas(x) { CC.save('cc.planner.areas', x); }
+    function habits() { return CC.load('cc.planner.habits', []); }
+    function setHabits(x) { CC.save('cc.planner.habits', x); }
+    function acts() { return CC.load('cc.planner.activities', []); }
+    function setActs(x) { CC.save('cc.planner.activities', x); }
+    function tasks() { return CC.load('cc.planner.tasks', []); }
+    function setTasks(x) { CC.save('cc.planner.tasks', x); }
+    function habitDone() { return CC.load('cc.planner.habitDone', {}); }
+    function setHabitDone(x) { CC.save('cc.planner.habitDone', x); }
+    function areaMap() { var m = {}; areas().forEach(function (a) { m[a.id] = a; }); return m; }
+
+    /* ---------- tabs ---------- */
+    function showTab(t) {
+      ['today', 'week', 'setup'].forEach(function (id) {
+        document.getElementById('pane-' + id).classList.toggle('on', id === t);
+        document.querySelector('.tab[data-tab="' + id + '"]').classList.toggle('accent', id === t);
+      });
+      if (t === 'week') renderWeek();
+      if (t === 'setup') renderSetup();
+      if (t === 'today') renderToday();
+    }
+
+    /* ---------- week grid ---------- */
+    function weekStartDate() {
+      var d = new Date(); d.setHours(0, 0, 0, 0);
+      var mon = (d.getDay() + 6) % 7; // days since Monday
+      d.setDate(d.getDate() - mon + weekOffset * 7);
+      return d;
+    }
+    function moveWeek(n) { weekOffset = (n === 0) ? 0 : weekOffset + n; renderWeek(); }
+
+    function renderWeek() {
+      var start = weekStartDate();
+      var days = [];
+      for (var i = 0; i < 7; i++) { var d = new Date(start); d.setDate(start.getDate() + i); days.push(d); }
+      var todayS = CC.todayStr();
+      var am = areaMap();
+
+      document.getElementById('wk-range').textContent =
+        days[0].toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' – ' +
+        days[6].toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+
+      document.getElementById('legend').innerHTML = areas().map(function (a) {
+        return '<span><i class="dot" style="background:' + a.color + '"></i>' + CC.esc(a.name) + '</span>';
+      }).join('');
+
+      var head = '<tr><th style="text-align:left">Area</th>';
+      days.forEach(function (d) {
+        var isT = CC.todayStr(d) === todayS;
+        head += '<th class="' + (isT ? 'today' : '') + '">' + DOW_FULL[d.getDay()] +
+          '<span class="dnum">' + d.getDate() + '</span></th>';
+      });
+      document.getElementById('wk-head').innerHTML = head + '</tr>';
+
+      var allTasks = tasks();
+      var hd = habitDone();
+      var body = areas().map(function (a) {
+        var row = '<td class="arealabel"><i class="dot" style="background:' + a.color + '"></i>' + CC.esc(a.name) + '</td>';
+        days.forEach(function (d) {
+          var ds = CC.todayStr(d);
+          var isT = ds === todayS;
+          var cell = '';
+          // habits for this area on this weekday
+          habits().forEach(function (h) {
+            if (h.areaId === a.id && (h.days || []).indexOf(d.getDay()) >= 0) {
+              var done = !!hd[h.id + '|' + ds];
+              cell += '<span class="tk ' + (done ? 'done' : '') + '" style="border-left-color:' + a.color +
+                '" onclick="toggleHabit(\'' + h.id + '\',\'' + ds + '\')">' +
+                '<span class="hb">habit · ' + h.mins + 'm</span>' + CC.esc(h.text) + '</span>';
+            }
+          });
+          // one-off tasks
+          allTasks.filter(function (t) { return t.areaId === a.id && t.date === ds; }).forEach(function (t) {
+            cell += '<span class="tk ' + (t.done ? 'done' : '') + '" style="border-left-color:' + a.color +
+              '" onclick="toggleTask(\'' + t.id + '\')">' +
+              '<span class="x" onclick="event.stopPropagation();delTask(\'' + t.id + '\')">×</span>' +
+              CC.esc(t.text) + '</span>';
+          });
+          cell += '<input class="qa" placeholder="+ add" onkeydown="qaKey(event,\'' + a.id + '\',\'' + ds + '\')" />';
+          row += '<td class="' + (isT ? 'today' : '') + '">' + cell + '</td>';
+        });
+        return '<tr>' + row + '</tr>';
+      }).join('');
+      document.getElementById('wk-body').innerHTML = body;
+    }
+
+    function qaKey(e, areaId, ds) {
+      if (e.key !== 'Enter') return;
+      var v = e.target.value.trim(); if (!v) return;
+      var t = tasks(); t.push({ id: CC.uid(), areaId: areaId, date: ds, text: v, done: false }); setTasks(t);
+      e.target.value = '';
+      renderWeek();
+      // keep focus convenient: refocus same cell input after re-render
+      var inp = document.querySelector('input.qa[onkeydown*="\'' + areaId + '\',\'' + ds + '\'"]');
+      if (inp) inp.focus();
+    }
+    function toggleTask(id) {
+      var t = tasks(); var it = t.find(function (x) { return x.id === id; });
+      if (it) it.done = !it.done; setTasks(t); refreshVisible();
+    }
+    function delTask(id) { setTasks(tasks().filter(function (x) { return x.id !== id; })); refreshVisible(); }
+    function toggleHabit(id, ds) {
+      var hd = habitDone(); var k = id + '|' + ds; hd[k] = !hd[k]; setHabitDone(hd); refreshVisible();
+    }
+    function refreshVisible() {
+      if (document.getElementById('pane-week').classList.contains('on')) renderWeek();
+      if (document.getElementById('pane-today').classList.contains('on')) renderToday();
+    }
+
+    /* ---------- today ---------- */
+    var lastList = [], curMins = 25, curTop = null;
+
+    function customTime() {
+      var m = parseInt(prompt('How many minutes do you have?', curMins), 10);
+      if (m > 0) suggest(m);
+    }
+    function suggest(mins, promoteKey) {
+      curMins = mins;
+      lastList = CC.buildSuggestions(mins);
+      var host = document.getElementById('sugg');
+      if (!lastList.length) {
+        host.innerHTML = '<div class="empty">Nothing set up yet. Add downtime activities in <b>Setup</b>, or queue articles in <b>Reading</b>.</div>';
+        return;
+      }
+      curTop = promoteKey ? (lastList.find(function (c) { return c.key === promoteKey; }) || lastList[0]) : lastList[0];
+      CC.markSuggested(curTop.key);
+      renderSugg();
+    }
+    function renderSugg() {
+      var c = curTop;
+      var host = document.getElementById('sugg');
+      var linkBtn = c.link ? '<a class="btn sm" href="' + CC.esc(c.link) + '" target="_blank" rel="noopener" onclick="markDone()">Open ↗</a>' : '';
+      var alts = lastList.filter(function (x) { return x.key !== c.key; }).slice(0, 3);
+      host.innerHTML =
+        '<div class="sugg-card" style="border-left-color:' + c.color + '">' +
+          '<span class="pill" style="background:transparent;color:' + c.color + '">' +
+            (c.areaName ? CC.esc(c.areaName) + ' · ' : '') + '~' + c.mins + ' min · ' + c.type + '</span>' +
+          '<div class="label">' + CC.esc(c.label) + '</div>' +
+          '<div class="sugg-actions">' +
+            '<button class="btn primary sm" onclick="startTimer()">Start ' + Math.min(c.mins, 60) + '-min block</button>' +
+            linkBtn +
+            '<button class="btn sm" onclick="markDone()">Did it ✓</button>' +
+            '<button class="btn ghost sm" onclick="suggest(curMins)">Something else ↻</button>' +
+          '</div>' +
+        '</div>' +
+        (alts.length ? '<div class="alts">' + alts.map(function (a) {
+          return '<span class="pill alt" style="border:1px solid ' + a.color + ';color:' + a.color +
+            '" onclick="suggest(curMins,\'' + a.key + '\')">' + CC.esc(a.label) + ' · ' + a.mins + 'm</span>';
+        }).join('') + '</div>' : '');
+    }
+    function startTimer() {
+      var task = curTop.label.replace(/^Read:\s*/, '');
+      CC.save('cc.focus.task', task);
+      CC.markSuggested(curTop.key);
+      location.href = 'focus.html';
+    }
+    function markDone() {
+      if (!curTop) return;
+      CC.completeSuggestion(curTop);
+      renderToday();
+      // roll a fresh suggestion
+      suggest(curMins);
+    }
+
+    function renderToday() {
+      document.getElementById('today-head').textContent =
+        new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+      var am = areaMap();
+      var ds = CC.todayStr();
+      var dow = new Date().getDay();
+      var hd = habitDone();
+      var rows = [];
+      habits().forEach(function (h) {
+        if ((h.days || []).indexOf(dow) >= 0) {
+          var done = !!hd[h.id + '|' + ds];
+          rows.push({ done: done, color: (am[h.areaId] || {}).color || 'var(--accent)',
+            text: h.text, sub: 'habit · ' + h.mins + 'm', onclick: "toggleHabit('" + h.id + "','" + ds + "')" });
+        }
+      });
+      tasks().filter(function (t) { return t.date === ds; }).forEach(function (t) {
+        rows.push({ done: t.done, color: (am[t.areaId] || {}).color || 'var(--accent)',
+          text: t.text, sub: (am[t.areaId] || {}).name || '', onclick: "toggleTask('" + t.id + "')" });
+      });
+      rows.sort(function (a, b) { return (a.done ? 1 : 0) - (b.done ? 1 : 0); });
+      var host = document.getElementById('agenda');
+      if (!rows.length) { host.innerHTML = '<div class="empty">No tasks or habits scheduled today. Plan some in the <b>Week</b> tab.</div>'; return; }
+      host.innerHTML = rows.map(function (r) {
+        return '<div class="agenda-item ' + (r.done ? 'done' : '') + '">' +
+          '<input type="checkbox" ' + (r.done ? 'checked' : '') + ' style="width:auto" onchange="' + r.onclick + '" />' +
+          '<i class="dot" style="background:' + r.color + '"></i>' +
+          '<span class="t">' + CC.esc(r.text) + '</span>' +
+          '<span class="muted" style="font-size:.76rem">' + CC.esc(r.sub) + '</span></div>';
+      }).join('');
+    }
+
+    /* ---------- setup ---------- */
+    function fillAreaSelects() {
+      var opts = areas().map(function (a) { return '<option value="' + a.id + '">' + CC.esc(a.name) + '</option>'; }).join('');
+      document.getElementById('nh-area').innerHTML = opts;
+      document.getElementById('nc-area').innerHTML = opts;
+    }
+    function renderSetup() {
+      fillAreaSelects();
+      // areas
+      document.getElementById('areas-list').innerHTML = areas().map(function (a) {
+        return '<div class="setup-row">' +
+          '<input type="color" value="' + a.color + '" onchange="setAreaColor(\'' + a.id + '\',this.value)" />' +
+          '<input type="text" value="' + CC.esc(a.name) + '" onchange="setAreaName(\'' + a.id + '\',this.value)" style="flex:1" />' +
+          '<button class="btn ghost sm" onclick="delArea(\'' + a.id + '\')">Remove</button></div>';
+      }).join('') || '<div class="muted">No areas.</div>';
+      // habits
+      var am = areaMap();
+      document.getElementById('habits-list').innerHTML = habits().map(function (h) {
+        var days = (h.days || []).slice().sort().map(function (d) { return DOW_FULL[d]; }).join(' ');
+        var a = am[h.areaId] || {};
+        return '<div class="setup-row"><i class="dot" style="background:' + (a.color || '#999') + '"></i>' +
+          '<span style="flex:1"><b>' + CC.esc(h.text) + '</b> <span class="muted">· ' + h.mins + 'm · ' + days + '</span></span>' +
+          '<button class="btn ghost sm" onclick="delHabit(\'' + h.id + '\')">Remove</button></div>';
+      }).join('') || '<div class="muted">No habits yet.</div>';
+      // dow picker
+      renderDowPicker();
+      // activities
+      document.getElementById('acts-list').innerHTML = acts().map(function (c) {
+        var a = am[c.areaId] || {};
+        return '<div class="setup-row"><i class="dot" style="background:' + (a.color || '#999') + '"></i>' +
+          '<span style="flex:1">' + CC.esc(c.name) + ' <span class="muted">· ' + c.mins + 'm' +
+          (c.link ? ' · <a href="' + CC.esc(c.link) + '" target="_blank" rel="noopener">link</a>' : '') + '</span></span>' +
+          '<button class="btn ghost sm" onclick="delAct(\'' + c.id + '\')">Remove</button></div>';
+      }).join('') || '<div class="muted">No activities yet.</div>';
+    }
+    function renderDowPicker() {
+      document.getElementById('nh-dow').innerHTML = [1, 2, 3, 4, 5, 6, 0].map(function (d) {
+        return '<button type="button" class="' + (newHabitDays.indexOf(d) >= 0 ? 'on' : '') + '" onclick="toggleDow(' + d + ')">' + DOW_LABELS[d] + '</button>';
+      }).join('');
+    }
+    function toggleDow(d) {
+      var i = newHabitDays.indexOf(d);
+      if (i >= 0) newHabitDays.splice(i, 1); else newHabitDays.push(d);
+      renderDowPicker();
+    }
+    function setAreaColor(id, v) { var a = areas(); var x = a.find(function (e) { return e.id === id; }); if (x) x.color = v; setAreas(a); }
+    function setAreaName(id, v) { var a = areas(); var x = a.find(function (e) { return e.id === id; }); if (x) x.name = v.trim() || x.name; setAreas(a); renderSetup(); }
+    function addArea() {
+      var name = document.getElementById('na-name').value.trim(); if (!name) return;
+      var a = areas(); a.push({ id: CC.uid(), name: name, color: document.getElementById('na-color').value }); setAreas(a);
+      document.getElementById('na-name').value = ''; renderSetup();
+    }
+    function delArea(id) {
+      if (areas().length <= 1) { alert('Keep at least one area.'); return; }
+      if (!confirm('Remove this area? Its habits and this-week tasks stay but lose their color.')) return;
+      setAreas(areas().filter(function (a) { return a.id !== id; })); renderSetup();
+    }
+    function addHabit() {
+      var text = document.getElementById('nh-text').value.trim(); if (!text) return;
+      if (!newHabitDays.length) { alert('Pick at least one day.'); return; }
+      var h = habits();
+      h.push({ id: CC.uid(), text: text, areaId: document.getElementById('nh-area').value,
+        mins: parseInt(document.getElementById('nh-mins').value, 10) || 20, days: newHabitDays.slice() });
+      setHabits(h);
+      document.getElementById('nh-text').value = ''; renderSetup();
+    }
+    function delHabit(id) { setHabits(habits().filter(function (h) { return h.id !== id; })); renderSetup(); }
+    function addAct() {
+      var name = document.getElementById('nc-name').value.trim(); if (!name) return;
+      var link = document.getElementById('nc-link').value.trim();
+      if (link && !/^https?:\/\//.test(link)) link = 'https://' + link;
+      var c = acts();
+      c.push({ id: CC.uid(), name: name, areaId: document.getElementById('nc-area').value,
+        mins: parseInt(document.getElementById('nc-mins').value, 10) || 20, link: link });
+      setActs(c);
+      document.getElementById('nc-name').value = ''; document.getElementById('nc-link').value = ''; renderSetup();
+    }
+    function delAct(id) { setActs(acts().filter(function (c) { return c.id !== id; })); renderSetup(); }
+
+    /* ---------- init ---------- */
+    renderToday();
+    suggest(25);
+  </script>
+</body>
+</html>

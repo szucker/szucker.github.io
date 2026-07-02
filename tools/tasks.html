@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tasks &amp; Projects · Command Center</title>
+  <link rel="stylesheet" href="../assets/css/tools.css" />
+  <script src="../assets/js/tools.js"></script>
+  <style>
+    .task { display: flex; gap: 11px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .task:last-child { border-bottom: none; }
+    .task .t { flex: 1; }
+    .task.done .t { text-decoration: line-through; color: var(--text-faint); }
+    .task.overdue .due { color: var(--danger); font-weight: 600; }
+    .due { font-size: .78rem; color: var(--text-faint); white-space: nowrap; }
+    .proj-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
+    .proj-tab { cursor: pointer; }
+  </style>
+</head>
+<body data-base="../">
+  <div class="wrap">
+    <div class="page-head">
+      <h1>Tasks &amp; Projects</h1>
+      <p>Group work by project or portfolio. Set due dates; overdue items surface in red.</p>
+    </div>
+
+    <div class="card">
+      <div class="proj-tabs" id="proj-tabs"></div>
+      <div class="row" style="margin-top:10px">
+        <input type="text" id="new-proj" placeholder="New project…" style="width:200px" />
+        <button class="btn sm" onclick="addProject()">Add project</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="row">
+        <input type="text" id="t-text" placeholder="Add a task…" style="flex:1;min-width:180px" />
+        <input type="date" id="t-due" style="width:160px" />
+        <button class="btn primary" onclick="addTask()">Add</button>
+      </div>
+      <hr class="sep" />
+      <div id="tasks"></div>
+    </div>
+
+    <div class="row between" style="margin-top:14px">
+      <span class="muted" id="count"></span>
+      <button class="btn ghost sm" onclick="clearDone()">Clear completed</button>
+    </div>
+    <p class="footer-note">Stored locally in your browser.</p>
+  </div>
+
+  <script>
+    CC.buildTopbar('tasks');
+    var KEY = 'cc.tasks';
+    function db() { return CC.load(KEY, { projects: ['Inbox'], active: 'Inbox', tasks: [] }); }
+    function save(d) { CC.save(KEY, d); }
+
+    function addProject() {
+      var name = document.getElementById('new-proj').value.trim();
+      if (!name) return;
+      var d = db();
+      if (d.projects.indexOf(name) < 0) d.projects.push(name);
+      d.active = name;
+      save(d);
+      document.getElementById('new-proj').value = '';
+      render();
+    }
+    function delProject(name) {
+      var d = db();
+      if (d.projects.length <= 1) { alert('Keep at least one project.'); return; }
+      if (!confirm('Delete project "' + name + '" and its tasks?')) return;
+      d.projects = d.projects.filter(function (p) { return p !== name; });
+      d.tasks = d.tasks.filter(function (t) { return t.proj !== name; });
+      if (d.active === name) d.active = d.projects[0];
+      save(d); render();
+    }
+    function selectProject(name) { var d = db(); d.active = name; save(d); render(); }
+
+    function addTask() {
+      var text = document.getElementById('t-text').value.trim();
+      if (!text) return;
+      var d = db();
+      d.tasks.unshift({ id: CC.uid(), text: text, done: false, due: document.getElementById('t-due').value || '', proj: d.active });
+      save(d);
+      document.getElementById('t-text').value = ''; document.getElementById('t-due').value = '';
+      document.getElementById('t-text').focus();
+      render();
+    }
+    function toggle(id) { var d = db(); var t = d.tasks.find(function (x) { return x.id === id; }); if (t) t.done = !t.done; save(d); render(); }
+    function del(id) { var d = db(); d.tasks = d.tasks.filter(function (x) { return x.id !== id; }); save(d); render(); }
+    function clearDone() { var d = db(); d.tasks = d.tasks.filter(function (x) { return !x.done; }); save(d); render(); }
+
+    function render() {
+      var d = db();
+      var today = new Date().toISOString().slice(0, 10);
+
+      // project tabs with counts
+      var tabs = document.getElementById('proj-tabs');
+      tabs.innerHTML = d.projects.map(function (p) {
+        var open = d.tasks.filter(function (t) { return t.proj === p && !t.done; }).length;
+        var active = p === d.active;
+        return '<span class="pill proj-tab ' + (active ? 'accent' : '') + '" onclick="selectProject(\'' + jsstr(p) + '\')">' +
+          CC.esc(p) + (open ? ' <strong>' + open + '</strong>' : '') +
+          (active && d.projects.length > 1 ? ' <span onclick="event.stopPropagation();delProject(\'' + jsstr(p) + '\')" title="Delete project" style="cursor:pointer">×</span>' : '') +
+          '</span>';
+      }).join('');
+
+      var list = d.tasks.filter(function (t) { return t.proj === d.active; })
+        .sort(function (a, b) {
+          if (a.done !== b.done) return a.done ? 1 : -1;
+          if (!a.due) return 1; if (!b.due) return -1;
+          return a.due < b.due ? -1 : 1;
+        });
+
+      var host = document.getElementById('tasks');
+      if (!list.length) { host.innerHTML = '<div class="empty">No tasks in this project.</div>'; }
+      else {
+        host.innerHTML = list.map(function (t) {
+          var overdue = t.due && !t.done && t.due < today;
+          var dueLabel = t.due ? (t.due === today ? 'today' : fmtDue(t.due)) : '';
+          return '<div class="task ' + (t.done ? 'done ' : '') + (overdue ? 'overdue' : '') + '">' +
+            '<input type="checkbox" ' + (t.done ? 'checked' : '') + ' onchange="toggle(\'' + t.id + '\')" style="width:auto" />' +
+            '<span class="t">' + CC.esc(t.text) + '</span>' +
+            (dueLabel ? '<span class="due">' + dueLabel + '</span>' : '') +
+            '<button class="btn ghost sm" onclick="del(\'' + t.id + '\')">×</button></div>';
+        }).join('');
+      }
+      var open = d.tasks.filter(function (t) { return !t.done; }).length;
+      document.getElementById('count').textContent = open + ' open across ' + d.projects.length + ' project(s)';
+    }
+
+    function fmtDue(s) {
+      var d = new Date(s + 'T00:00:00');
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    }
+    function jsstr(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+
+    document.getElementById('t-text').addEventListener('keydown', function (e) { if (e.key === 'Enter') addTask(); });
+    document.getElementById('new-proj').addEventListener('keydown', function (e) { if (e.key === 'Enter') addProject(); });
+    render();
+  </script>
+</body>
+</html>
