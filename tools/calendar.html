@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calendar · Command Center</title>
+  <link rel="stylesheet" href="../assets/css/tools.css" />
+  <script src="../assets/js/tools.js"></script>
+  <style>
+    .daystrip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+    .daybtn { border: 1px solid var(--border); border-radius: 10px; padding: 8px 4px; text-align: center; cursor: pointer; background: var(--bg-elev); }
+    .daybtn:hover { border-color: var(--accent); }
+    .daybtn.sel { background: var(--accent-soft); border-color: var(--accent); }
+    .daybtn .dw { font-size: .66rem; text-transform: uppercase; letter-spacing: .05em; color: var(--text-faint); }
+    .daybtn .dn { font-size: 1.15rem; font-weight: 700; }
+    .daybtn .cnt { height: 6px; margin-top: 3px; }
+    .daybtn .cnt i { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); margin: 0 1px; }
+
+    .tl { position: relative; }
+    .tl-row { display: flex; gap: 12px; align-items: stretch; padding: 3px 0; }
+    .tl-time { width: 76px; flex: none; text-align: right; color: var(--text-faint); font-size: .8rem; font-variant-numeric: tabular-nums; padding-top: 12px; }
+    .tl-body { flex: 1; border-left: 2px solid var(--border); padding-left: 14px; position: relative; }
+    .block { border-radius: 10px; padding: 10px 12px; margin: 3px 0; }
+    .block.meeting { background: var(--bg-sunk); border-left: 4px solid var(--text-soft); }
+    .block.meeting.now { border-left-color: var(--danger); }
+    .block.sugg { border: 1px dashed var(--border-strong); border-left: 4px solid var(--accent); }
+    .block .bt { font-weight: 600; }
+    .block .bm { font-size: .8rem; color: var(--text-soft); margin-top: 2px; }
+    .block .acts { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+    .allday { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    .drop { border: 2px dashed var(--border-strong); border-radius: var(--radius); padding: 22px; text-align: center; color: var(--text-soft); }
+    .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+    details.help summary { cursor: pointer; font-weight: 600; color: var(--text-soft); }
+    details.help { margin-top: 10px; }
+    details.help ol { font-size: .88rem; color: var(--text-soft); }
+  </style>
+</head>
+<body data-base="../">
+  <div class="wrap">
+    <div class="page-head">
+      <h1>Calendar</h1>
+      <p>Your real schedule with productive &amp; social blocks auto-slotted into the gaps. Import your calendar once; re-import to refresh.</p>
+    </div>
+
+    <div id="import-card" class="card" style="display:none">
+      <div class="drop" id="drop">
+        <div><strong>Import your calendar</strong> — drop a <span class="mono">.ics</span> file here, or</div>
+        <div style="margin-top:8px"><button class="btn primary sm" onclick="document.getElementById('file').click()">Choose file…</button></div>
+        <input type="file" id="file" accept=".ics,text/calendar" style="display:none" />
+      </div>
+      <details class="help">
+        <summary>How do I get my .ics file?</summary>
+        <ol>
+          <li><strong>Apple Calendar (Mac):</strong> File → Export → Export… saves an .ics.</li>
+          <li><strong>Google Calendar:</strong> Settings → Import &amp; export → Export (downloads a .zip; unzip to get .ics).</li>
+          <li><strong>Outlook:</strong> File → Save Calendar, or export the calendar as iCalendar (.ics).</li>
+        </ol>
+      </details>
+    </div>
+
+    <div class="card" id="loaded-bar" style="display:none">
+      <div class="row between">
+        <span class="muted" id="import-status" style="font-size:.85rem"></span>
+        <div class="row">
+          <button class="btn ghost sm" onclick="document.getElementById('file2').click()">Re-import</button>
+          <input type="file" id="file2" accept=".ics,text/calendar" style="display:none" />
+          <button class="btn ghost sm" onclick="editWindow()">Day hours</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="row between" style="margin-bottom:12px">
+        <div class="row">
+          <button class="btn sm" onclick="go(-1)">‹</button>
+          <button class="btn sm" onclick="goToday()">Today</button>
+          <button class="btn sm" onclick="go(1)">›</button>
+        </div>
+        <strong id="day-label"></strong>
+      </div>
+      <div class="daystrip" id="daystrip"></div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div id="allday" class="allday"></div>
+      <div class="tl" id="timeline"></div>
+    </div>
+
+    <p class="footer-note">Suggested blocks are drawn from your habits, reading queue, and overdue contacts — accept, do, or swap them. They're not written back to your calendar.</p>
+  </div>
+
+  <script>
+    CC.buildTopbar('calendar');
+    var selOffset = 0; // days from today
+
+    function windowCfg() { return CC.load('cc.calendar.window', { startH: 8, endH: 22 }); }
+    function editWindow() {
+      var w = windowCfg();
+      var s = parseInt(prompt('Day starts at hour (0-23):', w.startH), 10);
+      var e = parseInt(prompt('Day ends at hour (1-24):', w.endH), 10);
+      if (!isNaN(s) && !isNaN(e) && e > s) { CC.save('cc.calendar.window', { startH: s, endH: e }); render(); }
+    }
+
+    function selectedDate() { var d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + selOffset); return d; }
+    function go(n) { selOffset += n; render(); }
+    function goToday() { selOffset = 0; render(); }
+    function selectOffset(n) { selOffset = n; render(); }
+
+    function fmtT(d) { return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
+
+    function importText(text) {
+      var events = CC.parseICS(text);
+      if (!events.length) { alert('No upcoming events found in that file. Is it an .ics export?'); return; }
+      CC.saveCalendar(events);
+      render();
+    }
+    function handleFile(f) {
+      var r = new FileReader();
+      r.onload = function (e) { importText(e.target.result); };
+      r.readAsText(f);
+    }
+
+    function setupDrop() {
+      var drop = document.getElementById('drop');
+      ['dragenter', 'dragover'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); }); });
+      ['dragleave', 'drop'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('over'); }); });
+      drop.addEventListener('drop', function (e) { if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+      document.getElementById('file').addEventListener('change', function (e) { if (e.target.files[0]) handleFile(e.target.files[0]); });
+      document.getElementById('file2').addEventListener('change', function (e) { if (e.target.files[0]) handleFile(e.target.files[0]); });
+    }
+
+    function renderStrip() {
+      var host = document.getElementById('daystrip');
+      var base = new Date(); base.setHours(0, 0, 0, 0);
+      host.innerHTML = '';
+      for (var i = 0; i < 7; i++) {
+        var d = new Date(base); d.setDate(base.getDate() + i);
+        var ev = CC.eventsOnDay(d);
+        var n = Math.min(4, ev.timed.length + ev.allday.length);
+        var dots = ''; for (var j = 0; j < n; j++) dots += '<i></i>';
+        host.innerHTML += '<div class="daybtn ' + (i === selOffset ? 'sel' : '') + '" onclick="selectOffset(' + i + ')">' +
+          '<div class="dw">' + d.toLocaleDateString(undefined, { weekday: 'short' }) + '</div>' +
+          '<div class="dn">' + d.getDate() + '</div><div class="cnt">' + dots + '</div></div>';
+      }
+    }
+
+    function render() {
+      var hasCal = !!CC.load('cc.calendar.importedAt', 0);
+      document.getElementById('import-card').style.display = hasCal ? 'none' : 'block';
+      document.getElementById('loaded-bar').style.display = hasCal ? 'block' : 'none';
+      if (hasCal) {
+        var when = new Date(CC.load('cc.calendar.importedAt', 0));
+        var count = CC.load('cc.calendar.events', []).length;
+        document.getElementById('import-status').textContent =
+          count + ' events · imported ' + when.toLocaleDateString() + ' ' + when.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+
+      var day = selectedDate();
+      document.getElementById('day-label').textContent =
+        day.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+      renderStrip();
+
+      var w = windowCfg();
+      var plan = CC.buildDayPlan(day, w);
+
+      document.getElementById('allday').innerHTML = plan.allday.map(function (a) {
+        return '<span class="pill accent">📌 ' + CC.esc(a.summary || '(all day)') + '</span>';
+      }).join('');
+
+      var items = plan.timed.map(function (e) { return { t: e.start, kind: 'meeting', e: e }; })
+        .concat(plan.suggestions.map(function (s) { return { t: s.start, kind: 'sugg', s: s }; }))
+        .sort(function (a, b) { return a.t - b.t; });
+
+      var now = new Date();
+      var host = document.getElementById('timeline');
+      if (!items.length) {
+        host.innerHTML = '<div class="empty">' + (hasCal
+          ? 'No meetings and no free-time suggestions for this day. Enjoy the open space — or set up habits in the Planner.'
+          : 'Import your calendar above to see your day.') + '</div>';
+        return;
+      }
+      host.innerHTML = items.map(function (it) {
+        if (it.kind === 'meeting') {
+          var e = it.e;
+          var isNow = now >= e.start && now <= e.end;
+          return row(fmtT(e.start), '<div class="block meeting ' + (isNow ? 'now' : '') + '">' +
+            '<div class="bt">' + CC.esc(e.summary || '(busy)') + '</div>' +
+            '<div class="bm">' + fmtT(e.start) + '–' + fmtT(e.end) +
+            (e.location ? ' · ' + CC.esc(e.location.split('\n')[0]) : '') + '</div></div>');
+        } else {
+          var s = it.s, c = s.cand;
+          var linkBtn = c.link ? '<a class="btn sm" href="' + CC.esc(c.link) + '" target="_blank" rel="noopener">Open ↗</a>' : '';
+          return row(fmtT(s.start), '<div class="block sugg" style="border-left-color:' + c.color + '">' +
+            '<div class="bt">' + CC.esc(c.label) + '</div>' +
+            '<div class="bm">' + fmtT(s.start) + '–' + fmtT(s.end) +
+            (c.areaName ? ' · ' + CC.esc(c.areaName) : '') + ' · suggested</div>' +
+            '<div class="acts">' +
+              '<button class="btn primary sm" onclick="startBlock(\'' + c.key + '\')">Start</button>' +
+              linkBtn +
+              '<button class="btn sm" onclick="didIt(\'' + c.key + '\')">Did it ✓</button>' +
+              '<button class="btn ghost sm" onclick="swap(\'' + c.key + '\')">Swap ↻</button>' +
+            '</div></div>');
+        }
+      }).join('');
+    }
+    function row(time, body) {
+      return '<div class="tl-row"><div class="tl-time">' + time + '</div><div class="tl-body">' + body + '</div></div>';
+    }
+
+    // Actions rely on rebuilding the plan; we look the candidate up fresh.
+    function findCand(key) {
+      var day = selectedDate();
+      var plan = CC.buildDayPlan(day, windowCfg());
+      var s = plan.suggestions.find(function (x) { return x.cand.key === key; });
+      return s ? s.cand : null;
+    }
+    function startBlock(key) {
+      var c = findCand(key); if (!c) return;
+      CC.save('cc.focus.task', c.label.replace(/^Read:\s*/, ''));
+      CC.markSuggested(key);
+      location.href = 'focus.html';
+    }
+    function didIt(key) { var c = findCand(key); if (c) CC.completeSuggestion(c); render(); }
+    function swap(key) { CC.markSuggested(key); render(); }
+
+    setupDrop();
+    render();
+  </script>
+</body>
+</html>

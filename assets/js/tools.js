@@ -48,17 +48,18 @@
     var base = (document.body.getAttribute('data-base') || '');
     var primary = [
       { id: 'home', href: base + 'index.html', label: 'Dashboard' },
+      { id: 'calendar', href: base + 'tools/calendar.html', label: 'Calendar' },
       { id: 'planner', href: base + 'tools/planner.html', label: 'Planner' },
+      { id: 'contacts', href: base + 'tools/contacts.html', label: 'People' },
       { id: 'reading', href: base + 'tools/reading.html', label: 'Reading' },
-      { id: 'focus', href: base + 'tools/focus.html', label: 'Focus' },
-      { id: 'notes', href: base + 'tools/notes.html', label: 'Notes' },
-      { id: 'tz', href: base + 'tools/timezones.html', label: 'Time Zones' }
+      { id: 'focus', href: base + 'tools/focus.html', label: 'Focus' }
     ];
     var more = [
+      { id: 'notes', href: base + 'tools/notes.html', label: 'Notes' },
+      { id: 'tz', href: base + 'tools/timezones.html', label: 'Time Zones' },
       { id: 'tasks', href: base + 'tools/tasks.html', label: 'Tasks & Projects' },
       { id: 'writing', href: base + 'tools/writing.html', label: 'Writing Meter' },
       { id: 'countdowns', href: base + 'tools/countdowns.html', label: 'Countdowns' },
-      { id: 'contacts', href: base + 'tools/contacts.html', label: 'Contacts' },
       { id: 'meeting', href: base + 'tools/meeting-cost.html', label: 'Meeting Cost' },
       { id: 'shutdown', href: base + 'tools/shutdown.html', label: 'Shutdown' },
       { id: 'backup', href: base + 'tools/backup.html', label: 'Backup & Restore' }
@@ -158,6 +159,12 @@
         prio: r.prio });
     });
 
+    // relationship upkeep: overdue people become reach-out suggestions
+    CC.contactsDue().forEach(function (d) {
+      if (d.overdue) out.push({ key: 'reach:' + d.c.id, type: 'reach',
+        label: 'Reach out to ' + d.c.name, mins: 15, areaId: 'personal', ref: d.c.id, link: '' });
+    });
+
     var fit = out.filter(function (c) { return c.mins <= mins + 5; });
     var pool = fit.length ? fit : out;
 
@@ -200,6 +207,14 @@
       var cnt = CC.load('cc.planner.actCount', {});
       cnt[cand.ref] = (cnt[cand.ref] || 0) + 1;
       CC.save('cc.planner.actCount', cnt);
+    } else if (cand.type === 'reach') {
+      var cs = CC.load('cc.contacts', []);
+      var person = cs.find(function (x) { return x.id === cand.ref; });
+      if (person) {
+        person.interactions = person.interactions || [];
+        person.interactions.push({ id: CC.uid(), date: CC.todayStr(), type: 'note', note: 'Reached out' });
+        CC.save('cc.contacts', cs);
+      }
     }
     CC.markSuggested(cand.key);
   };
@@ -219,6 +234,202 @@
       var frac = c.cadence ? since / c.cadence : 0;
       return { c: c, last: last, since: since, frac: frac, overdue: c.cadence ? frac >= 1 : false };
     }).sort(function (a, b) { return b.frac - a.frac; });
+  };
+
+  /* ============================================================
+     Calendar: .ics import, recurrence expansion, day auto-planning
+     ============================================================ */
+  function icsUnescape(s) {
+    return String(s || '').replace(/\\n/gi, '\n').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\');
+  }
+  // Milliseconds a zone is ahead of UTC at a given instant (runtime-TZ independent).
+  function icsTzOffsetMs(instantMs, tz) {
+    var dtf = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23',
+      year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    var p = {}; dtf.formatToParts(new Date(instantMs)).forEach(function (x) { p[x.type] = x.value; });
+    return Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second) - instantMs;
+  }
+  // Convert a wall-clock time in zone `tz` to a real UTC instant (DST-correct).
+  function icsZonedToUtc(y, mo, da, h, mi, s, tz) {
+    try {
+      var wall = Date.UTC(y, mo - 1, da, h, mi, s);
+      var off = icsTzOffsetMs(wall, tz);
+      off = icsTzOffsetMs(wall - off, tz); // second pass corrects DST boundaries
+      return new Date(wall - off);
+    } catch (e) { return new Date(Date.UTC(y, mo - 1, da, h, mi, s)); }
+  }
+  function icsParseDT(val, params) {
+    params = params || {};
+    if ((params.VALUE && params.VALUE.toUpperCase() === 'DATE') || /^\d{8}$/.test(val)) {
+      return { date: new Date(+val.slice(0, 4), +val.slice(4, 6) - 1, +val.slice(6, 8)), allDay: true };
+    }
+    var m = val.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z)?$/);
+    if (!m) { var d = new Date(val); return { date: isNaN(d) ? null : d, allDay: false }; }
+    var y = +m[1], mo = +m[2], da = +m[3], h = +m[4], mi = +m[5], s = +m[6], utc = !!m[7];
+    if (utc) return { date: new Date(Date.UTC(y, mo - 1, da, h, mi, s)), allDay: false };
+    if (params.TZID) return { date: icsZonedToUtc(y, mo, da, h, mi, s, params.TZID), allDay: false };
+    return { date: new Date(y, mo - 1, da, h, mi, s), allDay: false };
+  }
+
+  // Parse an .ics string into base events, keeping only those relevant to a window.
+  CC.parseICS = function (text, opts) {
+    opts = opts || {};
+    var cutoff = opts.cutoff != null ? opts.cutoff : (Date.now() - 21 * 86400000);
+    text = String(text).replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n[ \t]/g, ''); // unfold
+    var lines = text.split('\n');
+    var events = [], cur = null, inTZ = false;
+    for (var li = 0; li < lines.length; li++) {
+      var line = lines[li];
+      if (line === 'BEGIN:VTIMEZONE') { inTZ = true; continue; }
+      if (line === 'END:VTIMEZONE') { inTZ = false; continue; }
+      if (inTZ) continue;
+      if (line === 'BEGIN:VEVENT') { cur = {}; continue; }
+      if (line === 'END:VEVENT') { if (cur) events.push(cur); cur = null; continue; }
+      if (!cur) continue;
+      var ci = line.indexOf(':'); if (ci < 0) continue;
+      var left = line.slice(0, ci), value = line.slice(ci + 1);
+      var segs = left.split(';'), name = segs[0].toUpperCase(), params = {};
+      for (var k = 1; k < segs.length; k++) { var kv = segs[k].split('='); params[kv[0].toUpperCase()] = kv[1]; }
+      if (name === 'SUMMARY') cur.summary = icsUnescape(value);
+      else if (name === 'LOCATION') cur.location = icsUnescape(value);
+      else if (name === 'DTSTART') { var a = icsParseDT(value, params); cur.start = a.date; cur.allDay = a.allDay; }
+      else if (name === 'DTEND') { var b = icsParseDT(value, params); cur.end = b.date; }
+      else if (name === 'RRULE') cur.rrule = value;
+      else if (name === 'UID') cur.uid = value;
+      else if (name === 'RECURRENCE-ID') { var c = icsParseDT(value, params); cur.recurrenceId = c.date; }
+    }
+    var out = [];
+    events.forEach(function (e) {
+      if (!e.start) return;
+      if (!e.end) e.end = new Date(e.start.getTime() + (e.allDay ? 86400000 : 3600000));
+      var untilMs = null;
+      if (e.rrule) { var um = e.rrule.match(/UNTIL=(\d{8})/); if (um) untilMs = new Date(+um[1].slice(0, 4), +um[1].slice(4, 6) - 1, +um[1].slice(6, 8)).getTime(); }
+      var keep = e.rrule ? (untilMs == null || untilMs >= cutoff) : (e.end.getTime() >= cutoff);
+      if (keep) out.push(e);
+    });
+    return out;
+  };
+
+  CC.saveCalendar = function (events) {
+    var ser = events.map(function (e) {
+      return { summary: e.summary || '(busy)', location: e.location || '', allDay: !!e.allDay,
+        start: e.start ? e.start.toISOString() : null, end: e.end ? e.end.toISOString() : null,
+        rrule: e.rrule || null, uid: e.uid || null, recurrenceId: e.recurrenceId ? e.recurrenceId.toISOString() : null };
+    });
+    CC.save('cc.calendar.events', ser);
+    CC.save('cc.calendar.importedAt', Date.now());
+  };
+  CC.loadCalendar = function () {
+    return CC.load('cc.calendar.events', []).map(function (e) {
+      return { summary: e.summary, location: e.location, allDay: e.allDay, rrule: e.rrule, uid: e.uid,
+        start: e.start ? new Date(e.start) : null, end: e.end ? new Date(e.end) : null,
+        recurrenceId: e.recurrenceId ? new Date(e.recurrenceId) : null };
+    });
+  };
+
+  var DOWCODES = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+  function icsKey(d) { return d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0'); }
+  function icsParseRule(s) {
+    var o = {}; s.split(';').forEach(function (kv) { var p = kv.split('='); o[p[0].toUpperCase()] = p[1]; });
+    var r = { freq: (o.FREQ || '').toUpperCase(), interval: o.INTERVAL ? +o.INTERVAL : 1 };
+    if (o.BYDAY) r.byday = o.BYDAY.split(',').map(function (x) { return x.replace(/^[+-]?\d+/, '').toUpperCase(); });
+    if (o.COUNT) r.count = +o.COUNT;
+    if (o.UNTIL) { var m = o.UNTIL.match(/^(\d{4})(\d{2})(\d{2})/); if (m) r.until = new Date(+m[1], +m[2] - 1, +m[3], 23, 59, 59); }
+    return r;
+  }
+  // Does event occur on `day` (local midnight Date)? Returns the occurrence start Date or null.
+  CC.eventOccursOn = function (ev, day) {
+    var start = ev.start; if (!start) return null;
+    var dayMid = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+    var startMid = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    if (!ev.rrule) {
+      var endMid = ev.end ? new Date(ev.end.getFullYear(), ev.end.getMonth(), ev.end.getDate()) : startMid;
+      if (ev.allDay) endMid = new Date(endMid.getTime() - 1); // DTEND is exclusive for all-day
+      return (dayMid >= startMid && dayMid <= endMid) ? start : null;
+    }
+    if (dayMid < startMid) return null;
+    var r = icsParseRule(ev.rrule);
+    if (r.until && dayMid > r.until) return null;
+    var occurs = false;
+    if (r.freq === 'DAILY') {
+      var dd = Math.round((dayMid - startMid) / 86400000);
+      if (dd % r.interval === 0 && (r.count == null || dd / r.interval < r.count)) occurs = true;
+    } else if (r.freq === 'WEEKLY') {
+      var byday = (r.byday && r.byday.length) ? r.byday : [DOWCODES[start.getDay()]];
+      if (byday.indexOf(DOWCODES[day.getDay()]) >= 0) {
+        var wd = Math.floor((dayMid - startMid) / (7 * 86400000));
+        if (wd % r.interval === 0) occurs = true;
+      }
+    } else if (r.freq === 'MONTHLY') {
+      if (day.getDate() === start.getDate()) {
+        var md = (day.getFullYear() - start.getFullYear()) * 12 + (day.getMonth() - start.getMonth());
+        if (md % r.interval === 0) occurs = true;
+      }
+    } else if (r.freq === 'YEARLY') {
+      if (day.getDate() === start.getDate() && day.getMonth() === start.getMonth()) occurs = true;
+    }
+    if (!occurs) return null;
+    return new Date(day.getFullYear(), day.getMonth(), day.getDate(), start.getHours(), start.getMinutes(), 0);
+  };
+
+  CC.eventsOnDay = function (day) {
+    var evs = CC.loadCalendar();
+    var overrides = {};
+    evs.forEach(function (e) { if (e.recurrenceId) overrides[(e.uid || '') + '|' + icsKey(e.recurrenceId)] = true; });
+    var timed = [], allday = [];
+    evs.forEach(function (e) {
+      var occ = CC.eventOccursOn(e, day);
+      if (!occ) return;
+      if (e.rrule && !e.recurrenceId && overrides[(e.uid || '') + '|' + icsKey(occ)]) return; // superseded by an edited instance
+      if (e.allDay) { allday.push({ summary: e.summary, location: e.location }); }
+      else {
+        var dur = (e.end && e.start) ? (e.end - e.start) : 3600000;
+        timed.push({ summary: e.summary, location: e.location, start: occ, end: new Date(occ.getTime() + dur) });
+      }
+    });
+    timed.sort(function (a, b) { return a.start - b.start; });
+    return { timed: timed, allday: allday };
+  };
+
+  // Merge real events with auto-suggested blocks that fill the free gaps.
+  CC.buildDayPlan = function (day, opts) {
+    opts = opts || {};
+    var startH = opts.startH != null ? opts.startH : 8;
+    var endH = opts.endH != null ? opts.endH : 21;
+    var dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate(), startH, 0, 0);
+    var dayEnd = new Date(day.getFullYear(), day.getMonth(), day.getDate(), endH, 0, 0);
+    var ev = CC.eventsOnDay(day);
+    var now = new Date();
+    var isToday = day.getFullYear() === now.getFullYear() && day.getMonth() === now.getMonth() && day.getDate() === now.getDate();
+    var floor = isToday ? Math.max(dayStart.getTime(), now.getTime()) : dayStart.getTime();
+
+    var busy = ev.timed.map(function (e) { return { s: Math.max(e.start.getTime(), dayStart.getTime()), e: Math.min(e.end.getTime(), dayEnd.getTime()) }; })
+      .filter(function (b) { return b.e > b.s; }).sort(function (a, b) { return a.s - b.s; });
+    var merged = [];
+    busy.forEach(function (b) { var last = merged[merged.length - 1]; if (last && b.s <= last.e) last.e = Math.max(last.e, b.e); else merged.push({ s: b.s, e: b.e }); });
+
+    var gaps = [], cursor = floor;
+    merged.forEach(function (b) { if (b.s > cursor) gaps.push({ s: cursor, e: b.s }); cursor = Math.max(cursor, b.e); });
+    if (cursor < dayEnd.getTime()) gaps.push({ s: cursor, e: dayEnd.getTime() });
+
+    var suggestions = [];
+    var usedKeys = {};
+    gaps.forEach(function (g) {
+      var mins = Math.round((g.e - g.s) / 60000);
+      if (mins < 20) return;
+      var pool = CC.buildSuggestions(Math.min(mins, 90)).filter(function (c) { return !usedKeys[c.key]; });
+      var n = Math.min(2, Math.max(1, Math.floor(mins / 75)));
+      var t = g.s;
+      for (var i = 0; i < n && pool.length; i++) {
+        var cand = pool[i]; if (!cand) break;
+        var blk = Math.min(cand.mins, mins);
+        suggestions.push({ suggestion: true, cand: cand, start: new Date(t), end: new Date(t + blk * 60000) });
+        usedKeys[cand.key] = true;
+        t += (blk + 5) * 60000;
+        if (t >= g.e) break;
+      }
+    });
+    return { allday: ev.allday, timed: ev.timed, suggestions: suggestions, dayStart: dayStart, dayEnd: dayEnd, isToday: isToday };
   };
 
   /* ---- One-time data migrations (safe, idempotent) ---- */

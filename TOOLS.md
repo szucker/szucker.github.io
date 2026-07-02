@@ -13,8 +13,10 @@ Open `index.html` (your site root) for the dashboard hub.
 
 | Tool | File | What it does |
 |------|------|--------------|
-| **Dashboard** | `index.html` | World clocks for key capitals, a proactive "Beat the Scroll" suggestion, "Today's Top 3," quick-launch to every tool, and an editable list of go-to sources. |
-| **Planner** | `tools/planner.html` | A digital assignment book. Plan the week in a grid of *areas* (Work/CFR, Chinese, Academic reading, Reading queue, Yu-Gi-Oh, Personal) × days; run a daily agenda; and use the **downtime coach** — tell it how many minutes you have and it suggests something productive (drawing from your activities, recurring habits, and unread Reading-queue items) instead of scrolling. Recurring habits auto-populate the grid; "Start block" hands off to the Deep-Work Timer. |
+| **Dashboard** | `index.html` | A preview of **today's plan** (your calendar events + auto-suggested blocks), "Today's Top 3," world clocks, and a tool launcher. |
+| **Calendar** | `tools/calendar.html` | Import a `.ics` export from Apple/Google/Outlook (drag-and-drop). Shows your real events on a day timeline and **auto-fills the free gaps** with suggested productive/social blocks (habits, reading, overdue-contact reach-outs). DST-correct across time zones; handles recurrence and all-day events. Re-import to refresh. |
+| **People (CRM)** | `tools/contacts.html` | Add connections with their digital channels (email, LinkedIn, Signal…), log every interaction (coffee, call, email, event…), and set an upkeep cadence. Overdue people automatically surface as reach-out blocks on the Calendar and dashboard. |
+| **Planner** | `tools/planner.html` | A digital assignment book. Plan the week in a grid of *areas* (Work, Chinese, Academic reading, Reading queue, Yu-Gi-Oh, Personal) × days; run a daily agenda; and use the **downtime coach** for open time. Recurring habits auto-populate the grid and feed the Calendar's suggested blocks. |
 | **Time-Zone Planner** | `tools/timezones.html` | Pick an anchor zone + date, and read an hour-by-hour overlap grid across capitals. It flags the hour with the most cities in working hours — the answer to "when can DC, London, and Delhi all take a call?" |
 | **Reading Queue** | `tools/reading.html` | Capture articles/books with a link, priority, and topic tags. Filter by tag or read/unread. Export to JSON. |
 | **Tasks & Projects** | `tools/tasks.html` | Task lists grouped by project/portfolio, with due dates; overdue items turn red. |
