@@ -60,7 +60,8 @@
       { id: 'countdowns', href: base + 'tools/countdowns.html', label: 'Countdowns' },
       { id: 'contacts', href: base + 'tools/contacts.html', label: 'Contacts' },
       { id: 'meeting', href: base + 'tools/meeting-cost.html', label: 'Meeting Cost' },
-      { id: 'shutdown', href: base + 'tools/shutdown.html', label: 'Shutdown' }
+      { id: 'shutdown', href: base + 'tools/shutdown.html', label: 'Shutdown' },
+      { id: 'backup', href: base + 'tools/backup.html', label: 'Backup & Restore' }
     ];
     function link(p) {
       return '<a href="' + p.href + '"' + (p.id === active ? ' class="active"' : '') + '>' + p.label + '</a>';

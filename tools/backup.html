@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Backup &amp; Restore · Command Center</title>
+  <link rel="stylesheet" href="../assets/css/tools.css" />
+  <script src="../assets/js/tools.js"></script>
+  <style>
+    .kv { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: .9rem; }
+    .kv:last-child { border-bottom: none; }
+    .kv .s { color: var(--text-faint); font-variant-numeric: tabular-nums; }
+    .drop { border: 2px dashed var(--border-strong); border-radius: var(--radius); padding: 26px; text-align: center; color: var(--text-soft); }
+    .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+    .bar { height: 8px; border-radius: 4px; background: var(--bg-sunk); overflow: hidden; margin-top: 10px; }
+    .bar > i { display: block; height: 100%; background: var(--accent); }
+  </style>
+</head>
+<body data-base="../">
+  <div class="wrap">
+    <div class="page-head">
+      <h1>Backup &amp; Restore</h1>
+      <p>Everything in these tools lives only in this browser. Export a single file to keep a copy or move to another machine, and restore it anywhere.</p>
+    </div>
+
+    <div class="grid cols-2">
+      <div class="card">
+        <h2 class="section" style="margin-top:0">Export</h2>
+        <p class="muted" style="font-size:.88rem">Downloads one <span class="mono">.json</span> file with all your Command Center data.</p>
+        <div class="row">
+          <button class="btn primary" onclick="doExport()">⬇ Download backup</button>
+          <button class="btn" onclick="copyExport()">Copy to clipboard</button>
+        </div>
+        <div id="copy-note" class="muted" style="font-size:.8rem;margin-top:8px"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="section" style="margin-top:0">Restore</h2>
+        <p class="muted" style="font-size:.88rem">Load a backup file. Choose whether to merge or replace.</p>
+        <div class="row" style="margin-bottom:10px">
+          <label class="row" style="gap:6px;cursor:pointer"><input type="radio" name="mode" value="merge" checked style="width:auto" /> Merge (keep newer)</label>
+          <label class="row" style="gap:6px;cursor:pointer"><input type="radio" name="mode" value="replace" style="width:auto" /> Replace all</label>
+        </div>
+        <div class="drop" id="drop">
+          <div>Drop a <span class="mono">.json</span> backup here, or</div>
+          <div style="margin-top:8px"><button class="btn sm" onclick="document.getElementById('file').click()">Choose file…</button></div>
+          <input type="file" id="file" accept="application/json,.json" style="display:none" />
+        </div>
+        <div id="restore-note" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <h2 class="section">What's stored now</h2>
+    <div class="card">
+      <div id="summary"></div>
+      <div class="bar"><i id="usage-bar" style="width:0%"></i></div>
+      <div class="row between" style="margin-top:8px">
+        <span class="muted" id="usage-text" style="font-size:.82rem"></span>
+        <button class="btn danger sm" onclick="wipe()">Erase all data</button>
+      </div>
+    </div>
+    <p class="footer-note">A backup is just text — safe to store in your notes, email to yourself, or drop in cloud storage.</p>
+  </div>
+
+  <script>
+    CC.buildTopbar('backup');
+    var PREFIX = 'cc.';
+    var LABELS = {
+      'cc.name': 'Your name', 'cc.theme': 'Theme', 'cc.clocks': 'World clocks',
+      'cc.focus': "Today's Top 3", 'cc.sources': 'Quick sources',
+      'cc.tz.cities': 'Time-zone cities', 'cc.reading': 'Reading queue',
+      'cc.tasks': 'Tasks & projects', 'cc.focus.cfg': 'Timer settings',
+      'cc.focus.stats': 'Timer stats', 'cc.focus.task': 'Timer task',
+      'cc.notes': 'Scratchpad notes', 'cc.writing.draft': 'Writing draft',
+      'cc.countdowns': 'Countdowns', 'cc.contacts': 'Contacts',
+      'cc.shutdown.items': 'Shutdown list', 'cc.shutdown.state': 'Shutdown state',
+      'cc.planner.areas': 'Planner: areas', 'cc.planner.habits': 'Planner: habits',
+      'cc.planner.activities': 'Planner: activities', 'cc.planner.tasks': 'Planner: tasks',
+      'cc.planner.habitDone': 'Planner: habit checkmarks', 'cc.planner.suggestLog': 'Planner: suggestion history',
+      'cc.planner.actCount': 'Planner: activity counts', 'cc.planner.init': 'Planner: initialized'
+    };
+
+    function ccKeys() {
+      var keys = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf(PREFIX) === 0) keys.push(k);
+      }
+      return keys.sort();
+    }
+    function gather() {
+      var data = {};
+      ccKeys().forEach(function (k) { data[k] = localStorage.getItem(k); });
+      return data;
+    }
+    function bundle() {
+      return { app: 'Command Center', version: 1, exportedAt: new Date().toISOString(), data: gather() };
+    }
+    function fname() {
+      var d = new Date();
+      var p = function (n) { return String(n).padStart(2, '0'); };
+      return 'command-center-backup-' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '.json';
+    }
+
+    function doExport() {
+      var blob = new Blob([JSON.stringify(bundle(), null, 2)], { type: 'application/json' });
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fname(); a.click();
+    }
+    function copyExport() {
+      var text = JSON.stringify(bundle());
+      var note = document.getElementById('copy-note');
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(
+          function () { note.textContent = 'Copied ' + text.length.toLocaleString() + ' characters to clipboard.'; },
+          function () { note.textContent = 'Copy failed — use Download instead.'; });
+      } else { note.textContent = 'Clipboard unavailable — use Download instead.'; }
+    }
+
+    function applyRestore(obj, mode) {
+      var note = document.getElementById('restore-note');
+      if (!obj || obj.app !== 'Command Center' || !obj.data) {
+        note.innerHTML = '<span class="pill danger">Not a valid Command Center backup.</span>'; return;
+      }
+      var incoming = obj.data;
+      var keys = Object.keys(incoming);
+      if (mode === 'replace') {
+        ccKeys().forEach(function (k) { localStorage.removeItem(k); });
+        keys.forEach(function (k) { localStorage.setItem(k, incoming[k]); });
+      } else {
+        // merge: take incoming values; for note/task-like arrays we keep it simple and prefer incoming
+        keys.forEach(function (k) { localStorage.setItem(k, incoming[k]); });
+      }
+      note.innerHTML = '<span class="pill good">Restored ' + keys.length + ' items' +
+        (obj.exportedAt ? ' from ' + new Date(obj.exportedAt).toLocaleString() : '') + '.</span>';
+      renderSummary();
+    }
+
+    function handleFile(file) {
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        var obj; try { obj = JSON.parse(e.target.result); }
+        catch (err) { document.getElementById('restore-note').innerHTML = '<span class="pill danger">Could not read that file.</span>'; return; }
+        var mode = document.querySelector('input[name=mode]:checked').value;
+        var n = obj && obj.data ? Object.keys(obj.data).length : 0;
+        if (!confirm((mode === 'replace' ? 'Replace ALL current data with' : 'Merge in') + ' ' + n + ' items from this backup?')) return;
+        applyRestore(obj, mode);
+      };
+      reader.readAsText(file);
+    }
+
+    var drop = document.getElementById('drop');
+    document.getElementById('file').addEventListener('change', function (e) { if (e.target.files[0]) handleFile(e.target.files[0]); });
+    ['dragenter', 'dragover'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); }); });
+    ['dragleave', 'drop'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('over'); }); });
+    drop.addEventListener('drop', function (e) { if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+
+    function wipe() {
+      if (!confirm('Erase ALL Command Center data in this browser? Export a backup first if unsure.')) return;
+      if (!confirm('Really erase everything? This cannot be undone.')) return;
+      ccKeys().forEach(function (k) { localStorage.removeItem(k); });
+      renderSummary();
+      document.getElementById('restore-note').innerHTML = '<span class="pill">All data erased.</span>';
+    }
+
+    function renderSummary() {
+      var keys = ccKeys();
+      var host = document.getElementById('summary');
+      if (!keys.length) { host.innerHTML = '<div class="empty">No data stored yet.</div>'; }
+      else {
+        host.innerHTML = keys.map(function (k) {
+          var val = localStorage.getItem(k) || '';
+          var label = LABELS[k] || k;
+          var detail = summarize(k, val);
+          return '<div class="kv"><span>' + CC.esc(label) + (detail ? ' <span class="muted">· ' + detail + '</span>' : '') +
+            '</span><span class="s">' + fmtBytes(val.length) + '</span></div>';
+        }).join('');
+      }
+      var total = keys.reduce(function (a, k) { return a + (localStorage.getItem(k) || '').length + k.length; }, 0);
+      // localStorage is typically ~5 MB per origin
+      var pct = Math.min(100, total / (5 * 1024 * 1024) * 100);
+      document.getElementById('usage-bar').style.width = pct.toFixed(1) + '%';
+      document.getElementById('usage-text').textContent =
+        fmtBytes(total) + ' used · ' + keys.length + ' items (browsers allow roughly 5 MB)';
+    }
+    function summarize(k, val) {
+      try {
+        var v = JSON.parse(val);
+        if (Array.isArray(v)) return v.length + ' entries';
+        if (v && typeof v === 'object') return Object.keys(v).length + ' keys';
+      } catch (e) {}
+      return '';
+    }
+    function fmtBytes(n) {
+      if (n < 1024) return n + ' B';
+      if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+      return (n / 1024 / 1024).toFixed(2) + ' MB';
+    }
+
+    renderSummary();
+  </script>
+</body>
+</html>

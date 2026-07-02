@@ -25,6 +25,7 @@ Open `index.html` (your site root) for the dashboard hub.
 | **Contact Cadence** | `tools/contacts.html` | Set how often to reach each person; overdue contacts rise to the top with a progress bar. |
 | **Meeting Cost** | `tools/meeting-cost.html` | Attendees × loaded hourly rate × duration, annualized — a reality check on standing meetings. |
 | **Shutdown Routine** | `tools/shutdown.html` | An editable end-of-day checklist that resets each morning. |
+| **Backup &amp; Restore** | `tools/backup.html` | Export every tool's data to one JSON file (or clipboard) and restore it on any device, with merge/replace. Shows a live storage breakdown. |
 
 Design notes:
 - Shared look-and-feel via `assets/css/tools.css`; shared helpers in `assets/js/tools.js`.
@@ -48,7 +49,6 @@ you think about where a file goes.
 Still on the client-side list (not yet built):
 - **Decision log** — timestamped record of decisions + rationale, searchable.
 - **Per-diem / expense scratch** for trips, with quick currency math against a stored rate.
-- **Data backup/restore** — one file that exports/imports every `cc.*` key, to move between machines.
 
 Things that would need an API key or a small backend (worth it if you want them):
 - **Live currency & FX** (exchangerate.host / ECB) instead of a manually stored rate.
