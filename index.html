@@ -3,279 +3,183 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Command Center</title>
+  <title>Now · Command Center</title>
   <link rel="stylesheet" href="assets/css/tools.css" />
   <script src="assets/js/tools.js"></script>
+  <style>
+    .home { max-width: 600px; }
+    .hello { margin: 12px 0 22px; }
+    .hello .hi { font-size: 1.7rem; font-weight: 800; letter-spacing: -.02em; cursor: text; }
+    .hello .date { color: var(--text-faint); margin-top: 2px; }
+    .now-card { background: var(--bg-elev); border: 1px solid var(--border); border-radius: 18px;
+      padding: 18px; box-shadow: var(--shadow); margin-bottom: 15px; }
+    .now-card .lbl { font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: var(--text-faint);
+      font-weight: 700; display: flex; justify-content: space-between; align-items: center; margin-bottom: 9px; }
+    .reroll { cursor: pointer; font-size: 1rem; color: var(--text-soft); user-select: none; }
+    .reroll:hover { color: var(--text); }
+    .now-title { font-size: 1.28rem; font-weight: 700; line-height: 1.25; }
+    .now-sub { color: var(--text-soft); font-size: .9rem; margin-top: 4px; }
+    .now-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+    .now-actions .btn { padding: 12px 18px; font-size: .96rem; border-radius: 13px; }
+    .now-actions .grow { flex: 1; justify-content: center; min-width: 110px; }
+    .accent-card { border-left: 5px solid var(--accent); }
+    .more-links { display: flex; gap: 8px 18px; flex-wrap: wrap; justify-content: center; margin-top: 24px; }
+    .more-links a { color: var(--text-soft); font-size: .9rem; }
+    .tiny { color: var(--text-faint); font-size: .82rem; }
+  </style>
 </head>
 <body data-base="">
-  <div class="wrap">
+  <div class="wrap home">
 
-    <div class="page-head">
-      <h1 id="greeting">Good day.</h1>
-      <p id="subline" class="mono"></p>
-    </div>
-
-    <!-- Today's plan (hero) -->
-    <div class="row between">
-      <h2 class="section" style="margin:22px 0 12px">Today</h2>
-      <a class="btn ghost sm" href="tools/calendar.html">Open calendar →</a>
-    </div>
-    <div class="card">
-      <div id="today-plan"></div>
+    <div class="hello">
+      <div class="hi" id="hi" title="Tap to set your name">Hi.</div>
+      <div class="date" id="date"></div>
     </div>
 
-    <!-- Today's focus -->
-    <h2 class="section">Today&rsquo;s Top 3</h2>
-    <div class="card">
-      <div id="focus-list"></div>
+    <!-- Next up -->
+    <div class="now-card">
+      <div class="lbl">Next up</div>
+      <div id="next"></div>
     </div>
 
-    <!-- World clocks -->
-    <div class="row between">
-      <h2 class="section" style="margin:26px 0 12px">World Clocks</h2>
-      <button class="btn ghost sm" onclick="editClocks()">Edit</button>
-    </div>
-    <div class="card">
-      <div id="clocks" class="grid cols-4"></div>
+    <!-- Do one thing -->
+    <div class="now-card accent-card">
+      <div class="lbl">Do one thing <span class="reroll" onclick="rollOne()" title="Something else">↻</span></div>
+      <div id="one"></div>
     </div>
 
-    <!-- Tools -->
-    <h2 class="section">Tools</h2>
-    <div class="grid cols-3">
-      <a class="tool-card" href="tools/calendar.html">
-        <div class="ico">📅</div><h3>Calendar</h3>
-        <p>Import your .ics; free time auto-filled with blocks.</p>
-      </a>
-      <a class="tool-card" href="tools/planner.html">
-        <div class="ico">🗓️</div><h3>Planner</h3>
-        <p>Weekly grid by area, daily agenda &amp; downtime coach.</p>
-      </a>
-      <a class="tool-card" href="tools/contacts.html">
-        <div class="ico">🤝</div><h3>People</h3>
-        <p>CRM: connections, interaction log &amp; upkeep.</p>
-      </a>
-      <a class="tool-card" href="tools/timezones.html">
-        <div class="ico">🌍</div><h3>Time-Zone Planner</h3>
-        <p>Find meeting windows that work across capitals.</p>
-      </a>
-      <a class="tool-card" href="tools/reading.html">
-        <div class="ico">📚</div><h3>Reading Queue</h3>
-        <p>Capture articles &amp; books; triage by priority.</p>
-      </a>
-      <a class="tool-card" href="tools/library.html">
-        <div class="ico">📖</div><h3>Library</h3>
-        <p>Catalogue books: edition, value &amp; shelf location.</p>
-      </a>
-      <a class="tool-card" href="tools/tasks.html">
-        <div class="ico">✓</div><h3>Tasks &amp; Projects</h3>
-        <p>Track commitments across your portfolio.</p>
-      </a>
-      <a class="tool-card" href="tools/focus.html">
-        <div class="ico">⏱️</div><h3>Deep-Work Timer</h3>
-        <p>Focused writing sessions with breaks.</p>
-      </a>
-      <a class="tool-card" href="tools/notes.html">
-        <div class="ico">📝</div><h3>Scratchpad</h3>
-        <p>Autosaving Markdown notes; export anytime.</p>
-      </a>
-      <a class="tool-card" href="tools/writing.html">
-        <div class="ico">✍️</div><h3>Writing Meter</h3>
-        <p>Length, reading time &amp; readability for drafts.</p>
-      </a>
-      <a class="tool-card" href="tools/countdowns.html">
-        <div class="ico">📅</div><h3>Countdowns</h3>
-        <p>Days until summits, elections &amp; deadlines.</p>
-      </a>
-      <a class="tool-card" href="tools/meeting-cost.html">
-        <div class="ico">💸</div><h3>Meeting Cost</h3>
-        <p>What that standing meeting really costs.</p>
-      </a>
-      <a class="tool-card" href="tools/shutdown.html">
-        <div class="ico">🌙</div><h3>Shutdown Routine</h3>
-        <p>End the day clean; reset each morning.</p>
-      </a>
-      <a class="tool-card" href="tools/backup.html">
-        <div class="ico">💾</div><h3>Backup &amp; Restore</h3>
-        <p>Export all your data or move it to another device.</p>
-      </a>
+    <!-- Reach out -->
+    <div class="now-card" id="reach-card" style="display:none">
+      <div class="lbl">Reach out <span class="reroll" onclick="rollReach()" title="Someone else">↻</span></div>
+      <div id="reach"></div>
     </div>
 
-    <!-- Sources -->
-    <h2 class="section" id="sources">Quick Sources</h2>
-    <div class="card">
-      <div id="sources-list" class="row"></div>
-      <hr class="sep" />
-      <div class="row">
-        <input type="text" id="src-label" placeholder="Label (e.g. Foreign Affairs)" style="flex:2 1 180px" />
-        <input type="url" id="src-url" placeholder="https://…" style="flex:3 1 220px" />
-        <button class="btn primary sm" onclick="addSource()">Add</button>
-      </div>
+    <div class="more-links">
+      <a href="tools/calendar.html">📅 Calendar</a>
+      <a href="tools/contacts.html">🤝 People</a>
+      <a href="tools/library.html">📖 Library</a>
+      <a href="tools/planner.html">🗓️ Planner</a>
+      <a href="tools/reading.html">📚 Reading</a>
     </div>
-
-    <p class="footer-note">All data lives in your browser (localStorage). Nothing is uploaded.</p>
+    <p class="tiny" style="text-align:center;margin-top:26px">Private &amp; local to this browser. Everything else lives in the <b>⋯ More</b> menu above.</p>
   </div>
 
   <script>
     CC.buildTopbar('home');
+    CC.ensurePlannerDefaults();
 
-    /* ---------- Greeting + subline ---------- */
-    var NAME_KEY = 'cc.name';
+    function fmtT(d) { return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
+
+    /* ---------- greeting ---------- */
     function greet() {
       var h = new Date().getHours();
-      var part = h < 5 ? 'Still up' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
-      var name = CC.load(NAME_KEY, '');
-      var g = document.getElementById('greeting');
-      g.textContent = part + (name ? ', ' + name : '') + '.';
-      g.style.cursor = 'text';
-      g.title = 'Click to set your name';
-      g.onclick = function () {
-        var n = prompt('Your name (blank to clear):', CC.load(NAME_KEY, ''));
-        if (n !== null) { CC.save(NAME_KEY, n.trim()); greet(); }
-      };
+      var part = h < 5 ? 'Still up' : h < 12 ? 'Morning' : h < 18 ? 'Afternoon' : 'Evening';
+      var name = CC.load('cc.name', '');
+      document.getElementById('hi').textContent = part + (name ? ', ' + name : '') + '.';
+      document.getElementById('date').textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+    }
+    document.getElementById('hi').onclick = function () {
+      var n = prompt('Your name (blank to clear):', CC.load('cc.name', ''));
+      if (n !== null) { CC.save('cc.name', n.trim()); greet(); }
+    };
+
+    /* ---------- next up ---------- */
+    function nextEvent() {
       var now = new Date();
-      document.getElementById('subline').textContent =
-        now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      for (var i = 0; i < 3; i++) {
+        var d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + i);
+        var ev = CC.eventsOnDay(d);
+        var upcoming = ev.timed.filter(function (e) { return e.end > now; }).sort(function (a, b) { return a.start - b.start; });
+        if (upcoming.length) return upcoming[0];
+      }
+      return null;
     }
-
-    /* ---------- World clocks ---------- */
-    var CLOCK_KEY = 'cc.clocks';
-    var DEFAULT_CLOCKS = [
-      { label: 'New York', tz: 'America/New_York' },
-      { label: 'Chicago', tz: 'America/Chicago' },
-      { label: 'London', tz: 'Europe/London' },
-      { label: 'Paris / Berlin', tz: 'Europe/Paris' },
-      { label: 'Cape Town', tz: 'Africa/Johannesburg' },
-      { label: 'Beijing / Singapore', tz: 'Asia/Singapore' }
-    ];
-    function getClocks() { return CC.load(CLOCK_KEY, DEFAULT_CLOCKS); }
-    function renderClocks() {
-      var host = document.getElementById('clocks');
-      var clocks = getClocks();
-      host.innerHTML = clocks.map(function (c) {
-        var d = new Date();
-        var time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: c.tz });
-        var day = d.toLocaleDateString('en-US', { weekday: 'short', timeZone: c.tz });
-        var hr = parseInt(d.toLocaleString('en-US', { hour: '2-digit', hour12: false, timeZone: c.tz }), 10);
-        var working = hr >= 8 && hr < 19;
-        return '<div class="card" style="box-shadow:none;padding:12px 14px">' +
-          '<div class="row between"><span style="font-weight:600">' + CC.esc(c.label) + '</span>' +
-          '<span class="pill ' + (working ? 'good' : '') + '">' + day + '</span></div>' +
-          '<div class="mono" style="font-size:1.35rem;margin-top:4px">' + time + '</div></div>';
-      }).join('');
-    }
-    function editClocks() {
-      var cur = getClocks().map(function (c) { return c.label + ' | ' + c.tz; }).join('\n');
-      var txt = prompt(
-        'One clock per line as "Label | IANA_TimeZone".\n' +
-        'Examples: Kyiv | Europe/Kyiv,  Doha | Asia/Qatar', cur);
-      if (txt === null) return;
-      var parsed = txt.split('\n').map(function (l) {
-        var p = l.split('|'); return { label: (p[0] || '').trim(), tz: (p[1] || '').trim() };
-      }).filter(function (c) { return c.label && c.tz; });
-      // validate tz
-      var bad = parsed.filter(function (c) {
-        try { new Date().toLocaleString('en-US', { timeZone: c.tz }); return false; }
-        catch (e) { return true; }
-      });
-      if (bad.length) { alert('Unknown time zone(s): ' + bad.map(function (b) { return b.tz; }).join(', ')); return; }
-      CC.save(CLOCK_KEY, parsed);
-      renderClocks();
-    }
-
-    /* ---------- Today's Top 3 ---------- */
-    var FOCUS_KEY = 'cc.focus';
-    function getFocus() {
-      var f = CC.load(FOCUS_KEY, null);
-      var today = new Date().toISOString().slice(0, 10);
-      if (!f || f.date !== today) { f = { date: today, items: [{t:'',done:false},{t:'',done:false},{t:'',done:false}] }; }
-      return f;
-    }
-    function renderFocus() {
-      var f = getFocus();
-      var host = document.getElementById('focus-list');
-      host.innerHTML = f.items.map(function (it, i) {
-        return '<div class="row" style="padding:6px 0">' +
-          '<input type="checkbox" ' + (it.done ? 'checked' : '') + ' onchange="toggleFocus(' + i + ')" style="width:auto" />' +
-          '<input type="text" value="' + CC.esc(it.t) + '" placeholder="Priority ' + (i+1) + '…" ' +
-          'oninput="setFocus(' + i + ', this.value)" style="flex:1;' + (it.done ? 'text-decoration:line-through;opacity:.55' : '') + '" />' +
-          '</div>';
-      }).join('');
-    }
-    function setFocus(i, v) { var f = getFocus(); f.items[i].t = v; CC.save(FOCUS_KEY, f); }
-    function toggleFocus(i) { var f = getFocus(); f.items[i].done = !f.items[i].done; CC.save(FOCUS_KEY, f); renderFocus(); }
-
-    /* ---------- Sources ---------- */
-    var SRC_KEY = 'cc.sources';
-    var DEFAULT_SOURCES = [
-      { label: 'Foreign Affairs', url: 'https://www.foreignaffairs.com' },
-      { label: 'FT', url: 'https://www.ft.com' },
-      { label: 'The Economist', url: 'https://www.economist.com' },
-      { label: 'Reuters World', url: 'https://www.reuters.com/world/' }
-    ];
-    function getSources() { return CC.load(SRC_KEY, DEFAULT_SOURCES); }
-    function renderSources() {
-      var host = document.getElementById('sources-list');
-      var s = getSources();
-      if (!s.length) { host.innerHTML = '<span class="muted">No sources yet.</span>'; return; }
-      host.innerHTML = s.map(function (x, i) {
-        return '<span class="pill accent" style="padding-right:4px">' +
-          '<a href="' + CC.esc(x.url) + '" target="_blank" rel="noopener">' + CC.esc(x.label) + '</a>' +
-          '<button class="btn ghost sm" style="padding:0 4px" onclick="delSource(' + i + ')" title="Remove">×</button></span>';
-      }).join('');
-    }
-    function addSource() {
-      var l = document.getElementById('src-label').value.trim();
-      var u = document.getElementById('src-url').value.trim();
-      if (!l || !u) return;
-      if (!/^https?:\/\//.test(u)) u = 'https://' + u;
-      var s = getSources(); s.push({ label: l, url: u }); CC.save(SRC_KEY, s);
-      document.getElementById('src-label').value = ''; document.getElementById('src-url').value = '';
-      renderSources();
-    }
-    function delSource(i) { var s = getSources(); s.splice(i, 1); CC.save(SRC_KEY, s); renderSources(); }
-
-    /* ---------- Today's plan preview (calendar + auto-blocks) ---------- */
-    function fmtT(d) { return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
-    function renderTodayPlan() {
-      var day = new Date(); day.setHours(0, 0, 0, 0);
+    function renderNext() {
+      var host = document.getElementById('next');
       var hasCal = !!CC.load('cc.calendar.importedAt', 0);
-      var plan = CC.buildDayPlan(day, CC.load('cc.calendar.window', { startH: 8, endH: 22 }));
-      var host = document.getElementById('today-plan');
-      var body = '';
-      if (plan.allday.length) {
-        body += '<div style="margin-bottom:10px">' + plan.allday.map(function (a) {
-          return '<span class="pill accent">📌 ' + CC.esc(a.summary || 'all day') + '</span>';
-        }).join(' ') + '</div>';
+      if (!hasCal) {
+        host.innerHTML = '<div class="now-title" style="font-size:1.05rem">No calendar yet</div>' +
+          '<div class="now-sub">Import your <a href="tools/calendar.html">.ics once</a> and your next event shows here.</div>';
+        return;
       }
-      var items = plan.timed.map(function (e) { return { t: e.start, kind: 'm', e: e }; })
-        .concat(plan.suggestions.map(function (s) { return { t: s.start, kind: 's', s: s }; }))
-        .sort(function (a, b) { return a.t - b.t; }).slice(0, 7);
-      if (!items.length) {
-        body += '<div class="muted" style="font-size:.92rem">' + (hasCal
-          ? 'Nothing left on the calendar today and no open-time suggestions. 🎉'
-          : 'No calendar yet — <a href="tools/calendar.html">import your .ics</a> and your day (with suggested blocks) shows up here.') + '</div>';
-      } else {
-        body += items.map(function (it) {
-          var time = '<span class="mono" style="display:inline-block;width:74px;color:var(--text-faint);font-size:.82rem">' + fmtT(it.t) + '</span>';
-          if (it.kind === 'm') {
-            var e = it.e;
-            return '<div class="row" style="padding:8px 0;border-bottom:1px solid var(--border)">' + time +
-              '<span style="font-weight:600">' + CC.esc(e.summary || '(busy)') + '</span>' +
-              '<span class="muted" style="font-size:.78rem"> · ' + fmtT(e.start) + '–' + fmtT(e.end) + '</span></div>';
-          }
-          var c = it.s.cand;
-          return '<div class="row" style="padding:8px 0;border-bottom:1px solid var(--border)">' + time +
-            '<span style="border-left:3px solid ' + c.color + ';padding-left:9px">' + CC.esc(c.label) +
-            ' <span class="muted" style="font-size:.76rem">· suggested</span></span></div>';
-        }).join('');
-      }
-      host.innerHTML = body;
+      var e = nextEvent();
+      if (!e) { host.innerHTML = '<div class="now-title" style="font-size:1.1rem">Nothing scheduled 🎉</div>'; return; }
+      var now = new Date();
+      var mins = Math.round((e.start - now) / 60000);
+      var rel = e.start <= now ? 'now' : mins < 60 ? 'in ' + mins + ' min' : mins < 1440 ? 'in ' + Math.round(mins / 60) + " h" : fmtDay(e.start);
+      host.innerHTML = '<div class="now-title">' + CC.esc(e.summary || '(busy)') + '</div>' +
+        '<div class="now-sub">' + fmtDay(e.start) + ' · ' + fmtT(e.start) + '–' + fmtT(e.end) +
+        (e.location ? ' · ' + CC.esc(e.location.split('\n')[0]) : '') + ' · <b>' + rel + '</b></div>';
+    }
+    function fmtDay(d) {
+      var t = new Date(); t.setHours(0, 0, 0, 0);
+      var diff = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - t) / 86400000);
+      return diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
     }
 
-    greet(); renderClocks(); renderFocus(); renderSources(); renderTodayPlan();
-    setInterval(renderClocks, 15000);
-    setInterval(greet, 60000);
-    setInterval(renderTodayPlan, 300000);
+    /* ---------- do one thing ---------- */
+    var curOne = null;
+    function rollOne() {
+      var list = CC.buildSuggestions(25).filter(function (c) { return c.type !== 'reach'; });
+      var host = document.getElementById('one');
+      if (!list.length) {
+        host.innerHTML = '<div class="now-sub">Nothing queued. Save an article in <a href="tools/reading.html">Reading</a> or add habits in the <a href="tools/planner.html">Planner</a>.</div>';
+        curOne = null; return;
+      }
+      curOne = list[0];
+      CC.markSuggested(curOne.key);
+      var c = curOne;
+      var actions = '';
+      if (c.link) actions += '<a class="btn primary grow" href="' + CC.esc(c.link) + '" target="_blank" rel="noopener" onclick="doneOne(1)">Read it →</a>';
+      else actions += '<button class="btn primary grow" onclick="startOne()">Start</button>';
+      actions += '<button class="btn grow" onclick="doneOne()">Done ✓</button>';
+      actions += '<button class="btn ghost" onclick="rollOne()">Later</button>';
+      host.innerHTML = '<div class="now-title">' + CC.esc(c.label) + '</div>' +
+        '<div class="now-sub">' + (c.areaName ? CC.esc(c.areaName) + ' · ' : '') + '~' + c.mins + ' min</div>' +
+        '<div class="now-actions">' + actions + '</div>';
+    }
+    function startOne() { if (!curOne) return; CC.save('cc.focus.task', curOne.label.replace(/^Read:\s*/, '')); location.href = 'tools/focus.html'; }
+    function doneOne(fromLink) { if (curOne) CC.completeSuggestion(curOne); if (!fromLink) rollOne(); }
+
+    /* ---------- reach out ---------- */
+    var curReach = null, reachSkip = {};
+    function chanQuick(c) {
+      var chans = c.channels || [];
+      var email = chans.find(function (x) { return x.type === 'Email' || /@/.test(x.value); });
+      var phone = chans.find(function (x) { return x.type === 'Phone' || /^[+()\d\s-]{7,}$/.test(x.value); });
+      if (phone) return { href: 'sms:' + phone.value.replace(/[^+\d]/g, ''), label: 'Text →' };
+      if (email) return { href: 'mailto:' + email.value, label: 'Email →' };
+      return null;
+    }
+    function rollReach() {
+      var due = CC.contactsDue().filter(function (d) { return d.overdue && !reachSkip[d.c.id]; });
+      var card = document.getElementById('reach-card');
+      if (!due.length) { card.style.display = 'none'; curReach = null; return; }
+      card.style.display = 'block';
+      curReach = due[0].c;
+      var d = due[0];
+      var quick = chanQuick(curReach);
+      var actions = '';
+      if (quick) actions += '<a class="btn primary grow" href="' + CC.esc(quick.href) + '" onclick="loggedReach()">' + quick.label + '</a>';
+      actions += '<button class="btn grow" onclick="loggedReach()">Logged ✓</button>';
+      actions += '<button class="btn ghost" onclick="skipReach()">Skip</button>';
+      document.getElementById('reach').innerHTML =
+        '<div class="now-title">' + CC.esc(curReach.name) + '</div>' +
+        '<div class="now-sub">' + (curReach.relationship ? CC.esc(curReach.relationship) + ' · ' : '') +
+          (d.last ? d.since + ' days since you connected' : 'no contact logged yet') + '</div>' +
+        '<div class="now-actions">' + actions + '</div>';
+    }
+    function loggedReach() {
+      if (!curReach) return;
+      var a = CC.load('cc.contacts', []);
+      var p = a.find(function (x) { return x.id === curReach.id; });
+      if (p) { p.interactions = p.interactions || []; p.interactions.push({ id: CC.uid(), date: CC.todayStr(), type: 'Note', note: 'Reached out' }); CC.save('cc.contacts', a); }
+      rollReach();
+    }
+    function skipReach() { if (curReach) reachSkip[curReach.id] = true; rollReach(); }
+
+    greet(); renderNext(); rollOne(); rollReach();
+    setInterval(function () { greet(); renderNext(); }, 60000);
   </script>
 </body>
 </html>

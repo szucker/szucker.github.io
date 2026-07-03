@@ -47,15 +47,15 @@
   CC.buildTopbar = function (active) {
     var base = (document.body.getAttribute('data-base') || '');
     var primary = [
-      { id: 'home', href: base + 'index.html', label: 'Dashboard' },
+      { id: 'home', href: base + 'index.html', label: 'Now' },
       { id: 'calendar', href: base + 'tools/calendar.html', label: 'Calendar' },
-      { id: 'planner', href: base + 'tools/planner.html', label: 'Planner' },
       { id: 'contacts', href: base + 'tools/contacts.html', label: 'People' },
-      { id: 'reading', href: base + 'tools/reading.html', label: 'Reading' },
-      { id: 'focus', href: base + 'tools/focus.html', label: 'Focus' }
+      { id: 'library', href: base + 'tools/library.html', label: 'Library' }
     ];
     var more = [
-      { id: 'library', href: base + 'tools/library.html', label: 'Library' },
+      { id: 'planner', href: base + 'tools/planner.html', label: 'Planner' },
+      { id: 'reading', href: base + 'tools/reading.html', label: 'Reading' },
+      { id: 'focus', href: base + 'tools/focus.html', label: 'Focus timer' },
       { id: 'notes', href: base + 'tools/notes.html', label: 'Notes' },
       { id: 'tz', href: base + 'tools/timezones.html', label: 'Time Zones' },
       { id: 'tasks', href: base + 'tools/tasks.html', label: 'Tasks & Projects' },
