@@ -21,6 +21,48 @@ sourced. Compiled 18 Jul 2026.
 
 ---
 
+## Click-ready search kit (do these while logged in)
+
+> These databases sit behind a login and/or bot-protection, so they can't be scraped from a
+> tooling environment — but each search below is pre-built. Sign in (free) and paste the exact
+> values. Confirmed classification for the village: **Svidník district · Prešov region · Sáros
+> (Šariš) county** (per the cisarik.com village page URL below).
+
+**① Passenger manifest — FamilySearch** (free account)
+- Collection: https://www.familysearch.org/en/search/collection/1368704
+- Run in order, anchoring to **arrival 14 Sept 1922, ship from Hamburg**:
+  1. Last name `Miller` · first name blank · arrival `1922` · place `New York`
+  2. Last name `Meller`, then `Möller`, then `Miler`
+  3. First name `Sam` · birth `1904` (±2) · arrival `1922` · `New York` · **no surname**
+- On the hit, read: **Last permanent residence** (expect Felső-Piszana), **Place of birth**,
+  **Nearest relative left behind** (expect **Meller Pál**).
+
+**①-b Manifest, power-search — Steve Morse One-Step** (no login; better wildcards)
+- Ellis Island white form: https://stevemorse.org/ellis/ellis.html → surname `M*ller`, arrival 1922.
+- Hamburg *departure* side: https://stevemorse.org/ellis/passengers.php?mode=hamb → `M*ller`, 1922.
+- Statue of Liberty search (free account): https://www.statueofliberty.org/discover/passenger-ship-search/
+
+**② Czechoslovak citizenship — 1930 census (Slovakiana)** (no login; for **Meller Pál & relatives who stayed**)
+- https://www.slovakiana.sk/kulturne-objekty?cat=16
+- Search box: `sčítací hárok Vyšná Pisaná` (also try `Felsőhímes`).
+- **Keep "LEN ZDIGITALIZOVANÉ" checked · UNCHECK "VOĽNÉ" · sort "ABECEDNE"**; page house-by-house.
+
+**② village record map — cisarik.com** (no login; parish/film pointers for this exact village)
+- https://www.cisarik.com/0_Vysna_Pisana_Svidnik_PV_Saros_Saris.html
+
+**② birth record — FamilySearch catalog** (free account; for the 1904/1905 Meller birth & the 1869 census)
+- Slovakia Census 1869 (covers Sáros): https://www.familysearch.org/en/search/collection/1986782 →
+  place `Felső-Piszana` / surname `Meller`.
+- Catalog by place: https://www.familysearch.org/search/catalog → Place `Felső-Piszana` **or**
+  `Sáros` → look for *Church records / Matriky / Jewish records* film entries.
+
+**② Jewish records — JewishGen** (free registration; Meller is a Jewish surname, "Shija" a Yiddish name)
+- Unified Hungary DB: https://www.jewishgen.org/databases/hungary/ → surname `Meller`,
+  town `Felsohimes`/`Felso-Piszana`, county `Saros`.
+- Births DB: https://www.jewishgen.org/databases/Hungary/Births.htm
+
+---
+
 ## 0. The geography behind the records
 
 | Fact | Detail | Why it matters |
