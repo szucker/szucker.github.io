@@ -4,15 +4,20 @@ Freely-available online information gathered for the descent claim under **§7(2
 (great-grandfather Sam Miller, b. 31 Dec 1904, Vyšná Pisaná). Every claim below is
 sourced. Compiled 18 Jul 2026.
 
-> **Three things that change the plan materially — read first:**
-> 1. **The 1930 census is free online, unredacted.** The single "bulletproof
->    Czechoslovak-citizenship proof" that Task 2 was going to chase by mail may be
->    downloadable today from **Slovakiana.sk** — no archive email required. A 1930
->    census record is explicitly accepted by the consulate as proof of CS citizenship.
+> **Things that change the plan materially — read first:**
+> 1. **Sam emigrated Sept 1922, so he is NOT in the 1930 census.** The census that would
+>    list *him* is the **1921 census** (taken 15 Feb 1921, while he still lived in the village) —
+>    but the Slovak 1921 census is archive-held, not the free online set (the fully-digitized
+>    online set is 1930). His Czechoslovak citizenship rests on **domovské právo** (domicile
+>    right) in Vyšná Pisaná, best proven by a **domovský list**, an old **Czechoslovak passport**
+>    (he likely emigrated on one in 1922), or the 1921 census. The **1930 census is still useful
+>    indirectly** — to document his father **Meller Pál** / relatives who stayed. See Task 2.
 > 2. **This is a great-grandparent claim → the government fee is €1,000**, not €30.
 >    (€30 applies only when the qualifying ancestor is a parent or grandparent.)
 > 3. **As of 15 July 2026** (three days ago) the prior **residency requirement was
 >    abolished** — descent applicants no longer need Slovak residence before applying.
+> 4. **Since summer 2025** the Ministry grants descent to descendants of ancestors who were
+>    **alive after 1918 even if they emigrated** — Sam (b. 1904, emigrated 1922) fits cleanly.
 
 ---
 
@@ -71,36 +76,57 @@ Sources: [FamilySearch collection 1368704](https://www.familysearch.org/en/searc
 
 ## TASK 2 — Czechoslovak citizenship record
 
-### 🟢 The free shortcut: 1930 census online (do this before emailing anyone)
-Slovakia has put the **entire 1930 census (sčítacie hárky) online, free and unredacted**
-(the 90-year data-protection period has expired) — **623,259 sheets** on the national culture
-portal **Slovakiana.sk**. A **1930 census record is named by Slovak lawyers as acceptable proof
-of Czechoslovak citizenship** — which is exactly the "bulletproof" document Task 2 wanted.
+### First, the timing problem (why the 1930 census isn't the answer for Sam)
+Sam **arrived in New York 14 Sept 1922**, so he was gone before the **1930** census was taken —
+he will not appear in it. The census that captured *him* is the **1921 census** (census date
+**15 February 1921**), when he was still resident in the village. Unfortunately the free,
+fully-digitized online set is the **1930** census; the **1921 Slovak census is archive-held and
+not comprehensively online** (survival varies by district), so it is a Prešov-archive request,
+not a download.
 
-**How to find the Meller family's sheet:**
+### How Sam was a Czechoslovak citizen even though he left in 1922
+Czechoslovak citizenship under **Act No. 236/1920 Coll.** was built on **domovské právo**
+(right of domicile / *pertinency*, Heimatrecht) — membership in a specific municipality. Former
+Austro-Hungarian nationals who held domicile right in a municipality that became Czechoslovak
+territory **acquired CS citizenship automatically in 1918–1920**. Sam was **born in Vyšná Pisaná
+in 1904**, so he held domicile right there from birth and became a Czechoslovak citizen — and
+remained one until (most likely) his **1928 US naturalization**. Emigrating in 1922 does not
+undo that, and the §7(2)(j) descent test only requires that the ancestor *"was"* a CS citizen at
+some point — which he was, 1918–1928. (Since summer 2025 the Ministry expressly grants descent
+where the ancestor was **alive after 1918 even if emigrated** — Sam fits.)
+
+### The documents that actually prove it (best → supporting)
+1. **Domovský list / certificate of domicile (domovská príslušnosť)** for the Meller family of
+   Vyšná Pisaná — the most on-point document; it *is* the legal basis of CS citizenship.
+   Archive request (Prešov / Svidník).
+2. **Old Czechoslovak passport** — Sam would very likely have **emigrated on a CS passport in
+   1922** (CS had existed since 1918). Worth hunting in family papers / any passport-office or
+   emigration records. A passport that states citizenship is direct proof.
+3. **1921 census** entry for the household — if it survives for the village (archive request).
+4. **US naturalization record** naming him a subject/citizen of "the Czechoslovak Republic"
+   — already in hand; the "and/or Hungary" hedge is its only weakness. Foreign naturalization
+   papers that state former nationality are accepted as supporting evidence.
+5. ⚠️ A **birth certificate alone does NOT prove citizenship** unless citizenship is stated on it.
+
+### The 1930 census still helps — indirectly
+Sam's father **Meller Pál** and any siblings/relatives who **stayed** should appear in the
+**1930 census**, documenting the **family's domovská príslušnosť in Vyšná Pisaná** — strong
+corroboration of the domicile basis (just not proof of Sam himself). This one **is** free online:
 1. Go to **https://www.slovakiana.sk/kulturne-objekty?cat=16**
 2. Search: `sčítací hárok Vyšná Pisaná` (also try `Felsőhímes`, `Felső-Piszana`).
-3. **Keep "LEN ZDIGITALIZOVANÉ" checked** (digitized only); **UNCHECK "VOĽNÉ"**.
-4. Switch sort from "NAJRELEVANTNEJŠIE" to **"ABECEDNE"** (alphabetical) — sheets are ordered
-   by house number, so you page through the village.
-5. Census sheets list every resident of a house with **birthplace, year of birth, and
-   *domovská príslušnosť* (domicile/pertinence)** — the fields that establish CS citizenship.
+3. **Keep "LEN ZDIGITALIZOVANÉ" checked**; **UNCHECK "VOĽNÉ"**; sort **"ABECEDNE"**.
+4. Sheets list every resident with birthplace, year of birth, and *domovská príslušnosť*.
+- Per-village helper index: https://www.cisarik.com/census-1930-my-resources.html
+- English download guide: https://poosch.sk/en/slovakiana-guides-download.html
 
-Helper indexes if the portal search is fiddly:
-- **cisarik.com** — "1930 census of all villages in Slovakia," organized by village.
-  → https://www.cisarik.com/census-1930-my-resources.html
-- **poosch.sk** guide (English) with location list & download walkthrough.
-  → https://poosch.sk/en/slovakiana-guides-download.html
-
-### If the 1930 sheet isn't enough (belt-and-suspenders, by mail)
-For the **1921 census**, unredacted **1939/1940** sheets, a *domovský list*, or anything not
-digitized, request directly from the archive:
-- **Štátny archív v Prešove, pracovisko Archív Svidník** — the regional archive for the Svidník
-  district. Email correspondence, in Slovak.
+### The archive request (the real Task 2)
+For the **domovský list**, the **1921 census**, or any domicile/citizenship record, email the
+archive directly, in Slovak:
+- **Štátny archív v Prešove, pracovisko Archív Svidník** — regional archive for Svidník district.
 - EHRI institution record: https://portal.ehri-project.eu/institutions/sk-003283
-- Contact used in the handoff: **archiv.presov@minv.sk**
-- Ask for: *sčítacie hárky (1921/1930), domovský list, or any domicile/citizenship record for
-  the Meller family of Vyšná Pisaná.*
+- Contact from the handoff: **archiv.presov@minv.sk**
+- Ask for: *domovský list / domovská príslušnosť, sčítacie hárky 1921, or any domicile/citizenship
+  record for the Meller family (Meller Pál and son, b. 1904) of Vyšná Pisaná / Felső-Piszana.*
 
 ### The Jewish-records angle (Meller is a Jewish surname; "Shija" a Yiddish given name)
 - Pre-1895 and alongside civil registration, births were also recorded in **Jewish
@@ -113,9 +139,11 @@ digitized, request directly from the archive:
   - Vivian Kahn's *Jewish Family Research in Slovakia* guide (PDF):
     https://www.jewishgen.org/hungary/slovak%20resources%20guide%20rev.pdf
 
-Sources: [Slovakiana census guide (poosch.sk)](https://poosch.sk/en/slovakiana-guides-download.html) ·
-[Národné osvetové centrum — 1930 census online](https://www.nocka.sk/scitanie-obyvatelstva-1930-online/) ·
-[Slovakia Census — FamilySearch](https://www.familysearch.org/en/wiki/Slovakia_Census) ·
+Sources: [Czechoslovak citizenship & domovské právo (Act 236/1920) — rutland & partners](https://rutlandandpartners.com/en/eligibility-of-former-czechoslovak-citizens-especially-persons-from-transcarpathian-ruthenia-and-slovakia-and-their-descendants-to-acquire-czech-citizenship/) ·
+[Who is a citizen? Guide to Czech citizenship 1918–1949 — Czech MFA](https://mzv.gov.cz/telaviv/en/visa_and_consular_services/citizenship/who_is_citizen_guide_to_czech.html) ·
+[Proving CS citizenship for pre-1930 emigrants — AKMV FAQ](https://www.akmv.sk/en/legal-help/obtaining-slovak-citizenship-by-descent-ancestry/) ·
+[1921 Czechoslovak census — Czech Statistical Office](https://csu.gov.cz/the-first-czechoslovak-population-census-1921) ·
+[Slovakiana 1930 census guide (poosch.sk)](https://poosch.sk/en/slovakiana-guides-download.html) ·
 [Slovakia Jewish Records — FamilySearch](https://www.familysearch.org/en/wiki/Slovakia_Jewish_Records) ·
 [JewishGen Slovak vital records](https://www.jewishgen.org/databases/Hungary/SlovakCivilVitalRecords_intro.html)
 
@@ -184,8 +212,8 @@ Sources: [Slovak citizenship by descent FAQ 2026 — AKMV](https://www.akmv.sk/e
 
 | Who | What changed |
 |---|---|
-| **You, free, this week** | Task 1 manifest **and** now Task 2's core — try the **1930 census on Slovakiana** yourself before spending anything. Order Task 3 certificates. |
-| **Slovak-speaking helper** | Only needed for the archive email **if** the online 1930 sheet is missing/insufficient, plus reading returned records and checking handwritten forms. |
+| **You, free, this week** | Task 1 manifest; check the free **1930 census on Slovakiana** for **Meller Pál / relatives who stayed** (corroborates family pertinency); hunt family papers for a **Czechoslovak passport**; order Task 3 certificates. |
+| **Slovak-speaking helper** | The **archive email** is back to being the real Task 2 — request the **domovský list / 1921 census** for the Meller family; plus reading returned records and checking handwritten forms. |
 | **Paid, unavoidable** | Apostilles; one registered sworn translator; the **€1,000** government fee. |
 | **Lawyer** | Still only if the online census *and* the mailed archive both come back empty. |
 
@@ -200,10 +228,11 @@ Sources: [Slovak citizenship by descent FAQ 2026 — AKMV](https://www.akmv.sk/e
 - Hamburg outbound viewer: https://stevemorse.org/ellis/passengers.php?mode=hamb
 
 **Citizenship record (Task 2)**
-- 1930 census (Slovakiana): https://www.slovakiana.sk/kulturne-objekty?cat=16
+- Prešov/Svidník archive — *domovský list / 1921 census* request (EHRI): https://portal.ehri-project.eu/institutions/sk-003283
+- 1930 census (Slovakiana) — for father Meller Pál / relatives who stayed: https://www.slovakiana.sk/kulturne-objekty?cat=16
 - Census download guide (EN): https://poosch.sk/en/slovakiana-guides-download.html
 - cisarik.com per-village index: https://www.cisarik.com/census-1930-my-resources.html
-- Prešov/Svidník archive (EHRI): https://portal.ehri-project.eu/institutions/sk-003283
+- Czech citizenship 1918–1949 (domovské právo) guide: https://mzv.gov.cz/telaviv/en/visa_and_consular_services/citizenship/who_is_citizen_guide_to_czech.html
 - FamilySearch Slovakia Jewish records: https://www.familysearch.org/en/wiki/Slovakia_Jewish_Records
 - JewishGen Slovak vital records: https://www.jewishgen.org/databases/Hungary/SlovakCivilVitalRecords_intro.html
 
