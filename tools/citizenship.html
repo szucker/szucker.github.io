@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Slovak Citizenship · Command Center</title>
+  <link rel="stylesheet" href="../assets/css/tools.css" />
+  <script src="../assets/js/tools.js"></script>
+  <style>
+    .facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; font-size: .92rem; }
+    .facts dt { color: var(--text-faint); font-weight: 600; }
+    .facts dd { margin: 0; color: var(--text); }
+
+    .prog-wrap { margin: 4px 0 2px; }
+    .prog-bar { height: 9px; background: var(--bg-sunk); border-radius: 999px; overflow: hidden; }
+    .prog-fill { height: 100%; background: var(--accent); border-radius: 999px; transition: width .3s ease; }
+    .prog-fill.done { background: var(--good); }
+
+    .task-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+    .task-head h2 { font-size: 1.12rem; margin: 0; letter-spacing: -.01em; }
+    .task-head .sub { color: var(--text-soft); font-size: .88rem; }
+    .task-meta { color: var(--text-soft); font-size: .88rem; margin: 6px 0 12px; }
+    .task-meta a { font-weight: 600; }
+
+    .step { display: flex; gap: 11px; align-items: flex-start; padding: 11px 0; border-bottom: 1px solid var(--border); }
+    .step:last-child { border-bottom: none; }
+    .step input[type=checkbox] { width: auto; margin-top: 3px; flex: none; }
+    .step .body { flex: 1; min-width: 0; }
+    .step .txt { line-height: 1.4; }
+    .step.done .txt { text-decoration: line-through; color: var(--text-faint); }
+    .step .hint { font-size: .82rem; color: var(--text-soft); margin-top: 3px; }
+    .step .note { margin-top: 7px; }
+    .step textarea { min-height: 0; height: 34px; resize: vertical; font-size: .85rem; padding: 6px 9px; }
+    .step .note-toggle { font-size: .78rem; cursor: pointer; color: var(--text-faint); user-select: none; }
+    .step .note-toggle:hover { color: var(--accent); }
+
+    .own { font-size: .68rem; font-weight: 700; padding: 2px 7px; border-radius: 999px; white-space: nowrap;
+      text-transform: uppercase; letter-spacing: .03em; }
+    .own.you { background: var(--accent-soft); color: var(--accent); }
+    .own.helper { background: var(--good-soft); color: var(--good); }
+    .own.paid { background: var(--warn-soft); color: var(--warn); }
+    .own.lawyer { background: var(--danger-soft); color: var(--danger); }
+
+    .doc-tbl { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    .doc-tbl th { text-align: left; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em;
+      color: var(--text-faint); font-weight: 700; padding: 0 10px 8px; border-bottom: 1px solid var(--border); }
+    .doc-tbl td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .doc-tbl tr:last-child td { border-bottom: none; }
+    .doc-tbl .gap { color: var(--text-soft); }
+    .doc-tbl .solid .gap { color: var(--good); }
+
+    .chain-row { display: flex; gap: 8px; align-items: center; padding: 7px 0; }
+    .chain-row .who { flex: 1; }
+    .chain-row .lnk { width: 150px; flex: none; }
+    @media (max-width: 620px) { .chain-row { flex-wrap: wrap; } .chain-row .lnk { width: 100%; } }
+    .chain-arrow { text-align: center; color: var(--text-faint); font-size: .8rem; }
+
+    details.help { margin-top: 4px; }
+    details.help summary { cursor: pointer; color: var(--text-soft); font-size: .85rem; font-weight: 600; }
+    details.help div { font-size: .86rem; color: var(--text-soft); margin: 8px 0 2px; }
+    details.help code { font-family: var(--mono); background: var(--bg-sunk); padding: 1px 5px; border-radius: 5px; font-size: .82rem; }
+  </style>
+</head>
+<body data-base="../">
+  <div class="wrap">
+    <div class="page-head">
+      <h1>Slovak Citizenship</h1>
+      <p>Document-retrieval tracker for the descent claim under §7(2)(j). One place for what's in hand,
+         what's still needed, and who's on the hook for each piece.</p>
+    </div>
+
+    <!-- Case facts -->
+    <div class="card">
+      <div class="row between" style="align-items:flex-start">
+        <h2 class="section" style="margin:0 0 12px">The case</h2>
+        <span class="pill accent" id="overall-pill">0%</span>
+      </div>
+      <dl class="facts">
+        <dt>Applicant</dt><dd>Sammy Zucker</dd>
+        <dt>Basis</dt><dd>Descent — §7(2)(j), Slovak Citizenship Act</dd>
+        <dt>Key ancestor</dt><dd>Sam Miller (b. 31 Dec 1904, Vyšná Pisaná / Felső-Piszana, Svidník District)</dd>
+        <dt>Orig. name</dt><dd>likely <b>Shija / Sam Meller</b>, son of <b>Meller Pál</b></dd>
+      </dl>
+      <div class="prog-wrap" style="margin-top:16px">
+        <div class="prog-bar"><div class="prog-fill" id="overall-fill" style="width:0%"></div></div>
+        <div class="row between" style="margin-top:6px">
+          <span class="muted" id="overall-count" style="font-size:.82rem"></span>
+          <button class="btn ghost sm" onclick="resetAll()">Reset tracker</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- The read -->
+    <div class="card" style="margin-top:16px">
+      <h2 class="section" style="margin:0 0 10px">The read</h2>
+      <p style="margin:0;font-size:.92rem;color:var(--text-soft)">
+        Birth-in-territory is <b>solid</b>. Two things still to nail: the <b>identity bridge</b>
+        (Shija Meller = Sam Miller — Task&nbsp;1) and, as insurance, a <b>bulletproof citizenship record</b>
+        from the Slovak archive (Task&nbsp;2). The US immigration records may already satisfy the consulate's
+        criteria, so Task&nbsp;2 is belt-and-suspenders, not a blocker.
+      </p>
+    </div>
+
+    <!-- Documents on hand -->
+    <div class="card" style="margin-top:16px">
+      <h2 class="section" style="margin:0 0 10px">Documents already in hand</h2>
+      <div style="overflow-x:auto">
+        <table class="doc-tbl">
+          <thead><tr><th>Document</th><th>Establishes</th><th>Remaining gap</th></tr></thead>
+          <tbody id="docs"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tasks render here -->
+    <div id="tasks"></div>
+
+    <!-- Descent chain (Task 3 detail) -->
+    <div class="card" style="margin-top:16px">
+      <div class="task-head">
+        <h2>Your descent chain</h2>
+        <span class="own you">You</span>
+      </div>
+      <p class="task-meta">Work backward from yourself. Each certificate must name the next person up the line,
+         all the way to Sam Miller. Add each generational link and mark it once the certificate is ordered/received.</p>
+      <div id="chain"></div>
+      <div class="row" style="margin-top:12px">
+        <input type="text" id="chain-who" placeholder="Name / link (e.g. Mom — birth cert)" style="flex:1;min-width:180px" />
+        <button class="btn primary sm" onclick="addChain()">Add link</button>
+      </div>
+      <details class="help">
+        <summary>Where NYC records live</summary>
+        <div>Pre-1949 NYC births/marriages → <b>NYC Municipal Archives</b>.
+             Later → <b>NY State Dept. of Health</b> / <b>NYC Dept. of Health</b>.</div>
+      </details>
+    </div>
+
+    <!-- Key contacts & links -->
+    <div class="card" style="margin-top:16px">
+      <h2 class="section" style="margin:0 0 10px">Key contacts &amp; links</h2>
+      <dl class="facts">
+        <dt>Prešov archive</dt><dd><a href="mailto:archiv.presov@minv.sk">archiv.presov@minv.sk</a> — Štátny archív v Prešove (Svidník District)</dd>
+        <dt>Manifest search</dt><dd><a href="https://www.familysearch.org" target="_blank" rel="noopener">familysearch.org</a> · <a href="https://www.libertyellisfoundation.org" target="_blank" rel="noopener">libertyellisfoundation.org</a></dd>
+        <dt>Anchor</dt><dd>Arrival <b>14 Sept 1922</b>, ship from <b>Hamburg</b> · petition&nbsp;no.&nbsp;123199</dd>
+      </dl>
+    </div>
+
+    <p class="footer-note">Stored locally in your browser. Nothing here phones home.</p>
+  </div>
+
+  <script>
+    CC.buildTopbar('citizenship');
+    var KEY = 'cc.citizenship';
+
+    /* ---- Reference data (from the retrieval handoff) ---- */
+    var DOCS = [
+      { doc: '1905 birth record (Meller Pál’s son, Felső-Piszana)',
+        est: 'Ancestor born in present-day Slovak territory',
+        gap: 'Given name reads “Shija”; needs bridge to “Sam Miller.” Unofficial translation — needs registered official Slovak translation for submission.',
+        solid: false },
+      { doc: 'US naturalization petition (Sam Miller, 1928)',
+        est: 'Subject of “the Czechoslovak Republic and/or Hungary”; arrival 14 Sept 1922 from Hamburg',
+        gap: '“and/or Hungary” hedge weakens it as sole citizenship proof',
+        solid: false },
+      { doc: 'Certificate of arrival (1928)',
+        est: 'Corroborates identity + petition no. 123199', gap: '—', solid: true },
+      { doc: '1950 census', est: 'Birthplace = Czechoslovakia', gap: '—', solid: true },
+      { doc: '1930 census', est: 'Birthplace = Hungary (pre-1918 framing)', gap: '—', solid: true }
+    ];
+
+    var TASKS = [
+      {
+        id: 't1', title: 'Task 1 — Passenger manifest', sub: 'the identity bridge · highest value',
+        meta: 'On <a href="https://www.familysearch.org" target="_blank" rel="noopener">familysearch.org</a> or ' +
+              '<a href="https://www.libertyellisfoundation.org" target="_blank" rel="noopener">libertyellisfoundation.org</a> ' +
+              '(free account). Collection: “New York, Passenger Arrival Lists (Ellis Island), 1892–1924.” ' +
+              'Anchor to <b>arrival 14 Sept 1922 from Hamburg</b>.',
+        steps: [
+          { id: 't1s1', own: 'you', txt: 'Search: last name Miller, blank first name, arrival year 1922, place New York', hint: 'Stop as soon as a match with the right anchor turns up.' },
+          { id: 't1s2', own: 'you', txt: 'If no hit, retry surname Meller, then Möller, then Miler' },
+          { id: 't1s3', own: 'you', txt: 'If still nothing, first name Sam + birth year 1904 (±2) + arrival 1922 + New York, no surname' },
+          { id: 't1s4', own: 'you', txt: 'On the image, capture Last permanent residence', hint: 'Expect Felső-Piszana / Vyšná Pisaná.' },
+          { id: 't1s5', own: 'you', txt: 'On the image, capture Place of birth' },
+          { id: 't1s6', own: 'you', txt: 'On the image, capture Nearest relative left behind', hint: 'Expect Meller Pál — this line welds the file together.' },
+          { id: 't1s7', own: 'you', txt: 'Save the image download + the auto-generated source citation' }
+        ]
+      },
+      {
+        id: 't2', title: 'Task 2 — Czechoslovak citizenship record', sub: 'bulletproof version · cheap insurance',
+        meta: 'Email <a href="mailto:archiv.presov@minv.sk">archiv.presov@minv.sk</a> (Štátny archív v Prešove), in Slovak. ' +
+              'Not online, not scriptable. May be unnecessary if the US immigration records are accepted.',
+        steps: [
+          { id: 't2s1', own: 'helper', txt: 'Finalize the Slovak-language request letter; have a native speaker sanity-check it', hint: 'Requesting: census sheets (sčítacie hárky, 1921/1930), domovský list, or any domicile/citizenship record for the Meller family of Vyšná Pisaná.' },
+          { id: 't2s2', own: 'helper', txt: 'Send the request to the Prešov archive' },
+          { id: 't2s3', own: 'helper', txt: 'On reply, read the returned archival record and assess whether it names the Meller family / establishes citizenship' }
+        ]
+      },
+      {
+        id: 't4', title: 'Task 4 — Finishing steps', sub: 'after all documents are gathered',
+        meta: 'Assembly and submission. Do these once the manifest, archive (if pursued), and descent chain are complete.',
+        steps: [
+          { id: 't4s1', own: 'paid', txt: 'Apostille every US document', hint: 'From the Secretary of State of the issuing state; federal docs → US Dept. of State.' },
+          { id: 't4s2', own: 'paid', txt: 'Registered official Slovak translation of every document, incl. re-translation of the 1905 birth record', hint: 'Translator must be on the Slovak Ministry of Justice list / marked “official” on the NY consulate list.' },
+          { id: 't4s3', own: 'you', txt: 'Fill the consulate’s affidavit form (substitutes for the six tax/employment/insurance confirmations)' },
+          { id: 't4s4', own: 'you', txt: 'Draw the family-tree diagram (Shija → Sam → you) to bring to the appointment' },
+          { id: 't4s5', own: 'you', txt: 'Book the appointment by email first' },
+          { id: 't4s6', own: 'you', txt: 'Request the FBI background check ONLY after the date is set', hint: '6-month validity vs. apostille + translation lead time.' }
+        ]
+      }
+    ];
+
+    var OWN_LABEL = { you: 'You', helper: 'Helper', paid: 'Paid', lawyer: 'Lawyer' };
+
+    /* ---- State: { steps:{id:bool}, notes:{id:str}, chain:[{id,who,link,done}] } ---- */
+    function db() { return CC.load(KEY, { steps: {}, notes: {}, chain: null }); }
+    function save(d) { CC.save(KEY, d); }
+    function stepIds() { var ids = []; TASKS.forEach(function (t) { t.steps.forEach(function (s) { ids.push(s.id); }); }); return ids; }
+
+    function jsstr(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+
+    /* ---- Documents table ---- */
+    function renderDocs() {
+      document.getElementById('docs').innerHTML = DOCS.map(function (r) {
+        return '<tr class="' + (r.solid ? 'solid' : '') + '">' +
+          '<td><b>' + CC.esc(r.doc) + '</b></td>' +
+          '<td>' + CC.esc(r.est) + '</td>' +
+          '<td class="gap">' + CC.esc(r.gap) + '</td></tr>';
+      }).join('');
+    }
+
+    /* ---- Tasks + steps ---- */
+    function toggleStep(id) { var d = db(); d.steps[id] = !d.steps[id]; save(d); render(); }
+    function saveNote(id, v) { var d = db(); if (v) d.notes[id] = v; else delete d.notes[id]; save(d); }
+    function toggleNote(id) {
+      var box = document.getElementById('note-' + id);
+      if (box) { box.style.display = box.style.display === 'none' ? 'block' : 'none';
+        if (box.style.display === 'block') box.querySelector('textarea').focus(); }
+    }
+
+    function renderTasks() {
+      var d = db();
+      document.getElementById('tasks').innerHTML = TASKS.map(function (t) {
+        var total = t.steps.length;
+        var done = t.steps.filter(function (s) { return d.steps[s.id]; }).length;
+        var pct = total ? Math.round(done / total * 100) : 0;
+        var steps = t.steps.map(function (s) {
+          var on = !!d.steps[s.id];
+          var note = d.notes[s.id] || '';
+          return '<div class="step ' + (on ? 'done' : '') + '">' +
+            '<input type="checkbox" ' + (on ? 'checked' : '') + ' onchange="toggleStep(\'' + s.id + '\')" />' +
+            '<div class="body">' +
+              '<div class="row between" style="gap:8px">' +
+                '<span class="txt">' + CC.esc(s.txt) + '</span>' +
+                '<span class="own ' + s.own + '">' + OWN_LABEL[s.own] + '</span>' +
+              '</div>' +
+              (s.hint ? '<div class="hint">' + CC.esc(s.hint) + '</div>' : '') +
+              '<span class="note-toggle" onclick="toggleNote(\'' + s.id + '\')">' + (note ? '✎ note' : '+ note') + '</span>' +
+              '<div class="note" id="note-' + s.id + '" style="display:' + (note ? 'block' : 'none') + '">' +
+                '<textarea placeholder="Notes, dates, reference numbers…" oninput="saveNote(\'' + s.id + '\', this.value)">' + CC.esc(note) + '</textarea>' +
+              '</div>' +
+            '</div></div>';
+        }).join('');
+        return '<div class="card" style="margin-top:16px">' +
+          '<div class="task-head"><h2>' + CC.esc(t.title) + '</h2><span class="sub">' + t.sub + '</span></div>' +
+          '<div class="task-meta">' + t.meta + '</div>' +
+          '<div class="prog-wrap"><div class="prog-bar"><div class="prog-fill ' + (pct === 100 ? 'done' : '') + '" style="width:' + pct + '%"></div></div>' +
+            '<div class="muted" style="font-size:.8rem;margin-top:5px">' + done + ' / ' + total + ' done</div></div>' +
+          '<hr class="sep" />' + steps + '</div>';
+      }).join('');
+    }
+
+    /* ---- Descent chain (Task 3) ---- */
+    function defaultChain() {
+      return [
+        { id: CC.uid(), who: 'You (Sammy Zucker) — birth certificate', link: '', done: false },
+        { id: CC.uid(), who: 'Parent → grandparent link — birth/marriage cert', link: '', done: false },
+        { id: CC.uid(), who: 'Grandparent → Sam Miller link — birth/marriage cert', link: '', done: false }
+      ];
+    }
+    function getChain() { var d = db(); if (!d.chain) { d.chain = defaultChain(); save(d); } return d.chain; }
+    function addChain() {
+      var v = document.getElementById('chain-who').value.trim();
+      if (!v) return;
+      var d = db(); if (!d.chain) d.chain = defaultChain();
+      d.chain.push({ id: CC.uid(), who: v, link: '', done: false });
+      save(d); document.getElementById('chain-who').value = ''; renderChain(); renderOverall();
+    }
+    function toggleChain(id) { var d = db(); var c = (d.chain || []).find(function (x) { return x.id === id; }); if (c) c.done = !c.done; save(d); renderChain(); renderOverall(); }
+    function editChain(id, field, v) { var d = db(); var c = (d.chain || []).find(function (x) { return x.id === id; }); if (c) { c[field] = v; save(d); } }
+    function delChain(id) { var d = db(); d.chain = (d.chain || []).filter(function (x) { return x.id !== id; }); save(d); renderChain(); renderOverall(); }
+
+    function renderChain() {
+      var chain = getChain();
+      var host = document.getElementById('chain');
+      if (!chain.length) { host.innerHTML = '<div class="empty">No links yet. Add the first one below.</div>'; return; }
+      host.innerHTML = chain.map(function (c, i) {
+        var arrow = i < chain.length - 1 ? '<div class="chain-arrow">↓</div>' : '';
+        return '<div class="chain-row">' +
+          '<input type="checkbox" style="width:auto;flex:none" ' + (c.done ? 'checked' : '') + ' onchange="toggleChain(\'' + c.id + '\')" />' +
+          '<input class="who" type="text" value="' + CC.esc(c.who) + '" oninput="editChain(\'' + c.id + '\',\'who\',this.value)" />' +
+          '<input class="lnk" type="text" placeholder="status / ref #" value="' + CC.esc(c.link || '') + '" oninput="editChain(\'' + c.id + '\',\'link\',this.value)" />' +
+          '<button class="btn ghost sm" onclick="delChain(\'' + c.id + '\')" title="Remove">×</button>' +
+          '</div>' + arrow;
+      }).join('');
+    }
+
+    /* ---- Overall progress ---- */
+    function renderOverall() {
+      var d = db();
+      var ids = stepIds();
+      var chain = getChain();
+      var total = ids.length + chain.length;
+      var done = ids.filter(function (id) { return d.steps[id]; }).length +
+                 chain.filter(function (c) { return c.done; }).length;
+      var pct = total ? Math.round(done / total * 100) : 0;
+      document.getElementById('overall-pill').textContent = pct + '%';
+      var fill = document.getElementById('overall-fill');
+      fill.style.width = pct + '%';
+      fill.classList.toggle('done', pct === 100);
+      document.getElementById('overall-count').textContent = done + ' of ' + total + ' items complete';
+    }
+
+    function resetAll() {
+      if (!confirm('Reset all checkboxes, notes, and the descent chain to their defaults?')) return;
+      CC.save(KEY, { steps: {}, notes: {}, chain: null });
+      render();
+    }
+
+    function render() { renderDocs(); renderTasks(); renderChain(); renderOverall(); }
+
+    document.getElementById('chain-who').addEventListener('keydown', function (e) { if (e.key === 'Enter') addChain(); });
+    render();
+  </script>
+</body>
+</html>

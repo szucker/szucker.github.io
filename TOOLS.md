@@ -26,6 +26,7 @@ Open `index.html` (your site root) for the dashboard hub.
 | **Countdowns** | `tools/countdowns.html` | Days-until board for summits, elections, deadlines, and travel; near-term dates flag red. |
 | **Contact Cadence** | `tools/contacts.html` | Set how often to reach each person; overdue contacts rise to the top with a progress bar. |
 | **Meeting Cost** | `tools/meeting-cost.html` | Attendees × loaded hourly rate × duration, annualized — a reality check on standing meetings. |
+| **Slovak Citizenship** | `tools/citizenship.html` | Document-retrieval tracker for the descent claim (§7(2)(j)): what's in hand vs. the remaining gaps, the four retrieval tasks broken into checkable steps with per-step notes, an editable descent-chain builder, key contacts/links, and an overall progress bar. |
 | **Shutdown Routine** | `tools/shutdown.html` | An editable end-of-day checklist that resets each morning. |
 | **Backup &amp; Restore** | `tools/backup.html` | Export every tool's data to one JSON file (or clipboard) and restore it on any device, with merge/replace. Shows a live storage breakdown. |
 

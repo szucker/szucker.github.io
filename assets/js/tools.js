@@ -62,6 +62,7 @@
       { id: 'writing', href: base + 'tools/writing.html', label: 'Writing Meter' },
       { id: 'countdowns', href: base + 'tools/countdowns.html', label: 'Countdowns' },
       { id: 'meeting', href: base + 'tools/meeting-cost.html', label: 'Meeting Cost' },
+      { id: 'citizenship', href: base + 'tools/citizenship.html', label: 'Slovak Citizenship' },
       { id: 'shutdown', href: base + 'tools/shutdown.html', label: 'Shutdown' },
       { id: 'backup', href: base + 'tools/backup.html', label: 'Backup & Restore' }
     ];
